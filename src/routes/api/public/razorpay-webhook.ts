@@ -4,31 +4,13 @@ import { z } from "zod";
 
 const eventSchema = z.object({
   event: z.string(),
-  payload: z
-    .object({
-      payment: z
-        .object({
-          entity: z
-            .object({
-              id: z.string(),
-              order_id: z.string().nullable().optional(),
-              status: z.string(),
-              amount: z.number().optional(),
-              currency: z.string().optional(),
-            })
-            .passthrough(),
-        })
-        .optional(),
-      order: z.object({ entity: z.object({ id: z.string() }).passthrough() }).optional(),
-      refund: z
-        .object({
-          entity: z
-            .object({ id: z.string(), payment_id: z.string(), status: z.string().optional() })
-            .passthrough(),
-        })
-        .optional(),
-    })
-    .passthrough(),
+  payload: z.object({
+    payment: z.object({
+      entity: z.object({ id: z.string(), order_id: z.string().nullable().optional(), status: z.string(), amount: z.number().optional(), currency: z.string().optional() }).passthrough(),
+    }).optional(),
+    order: z.object({ entity: z.object({ id: z.string() }).passthrough() }).optional(),
+    refund: z.object({ entity: z.object({ id: z.string(), payment_id: z.string(), status: z.string().optional() }).passthrough() }).optional(),
+  }).passthrough(),
 });
 
 // Exempt from per-user rate limits: authenticated by HMAC signature instead.
@@ -44,8 +26,7 @@ export const Route = createFileRoute("/api/public/razorpay-webhook")({
         const expected = createHmac("sha256", secret).update(raw).digest("hex");
         const a = Buffer.from(sig);
         const b = Buffer.from(expected);
-        if (a.length !== b.length || !timingSafeEqual(a, b))
-          return new Response("Invalid signature", { status: 401 });
+        if (a.length !== b.length || !timingSafeEqual(a, b)) return new Response("Invalid signature", { status: 401 });
 
         let parsed;
         try {
@@ -57,12 +38,9 @@ export const Route = createFileRoute("/api/public/razorpay-webhook")({
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
         // Replay protection: Razorpay sends a unique id per event delivery.
-        const eventId =
-          request.headers.get("x-razorpay-event-id") ??
+        const eventId = request.headers.get("x-razorpay-event-id") ??
           createHmac("sha256", "evt").update(raw).digest("hex");
-        const { error: dupErr } = await supabaseAdmin
-          .from("webhook_events")
-          .insert({ event_id: eventId, event });
+        const { error: dupErr } = await supabaseAdmin.from("webhook_events").insert({ event_id: eventId, event });
         if (dupErr) {
           if (dupErr.code === "23505") return new Response("ok"); // already processed
           console.error("webhook_events insert failed", dupErr);
@@ -73,24 +51,14 @@ export const Route = createFileRoute("/api/public/razorpay-webhook")({
         try {
           if (event === "refund.processed" || event === "refund.failed") {
             const rf = payload.refund?.entity;
-            if (rf)
-              await svc.markRefund(rf.id, event === "refund.processed" ? "processed" : "failed");
+            if (rf) await svc.markRefund(rf.id, event === "refund.processed" ? "processed" : "failed");
             return new Response("ok");
           }
-          if (
-            event === "payment.captured" ||
-            event === "payment.authorized" ||
-            event === "payment.failed" ||
-            event === "order.paid"
-          ) {
+          if (event === "payment.captured" || event === "payment.authorized" || event === "payment.failed" || event === "order.paid") {
             const pay = payload.payment?.entity;
             const orderId = pay?.order_id ?? payload.order?.entity.id ?? null;
             if (!pay || !orderId) return new Response("ok");
-            const { data: row } = await supabaseAdmin
-              .from("payments")
-              .select("id")
-              .eq("razorpay_order_id", orderId)
-              .maybeSingle();
+            const { data: row } = await supabaseAdmin.from("payments").select("id").eq("razorpay_order_id", orderId).maybeSingle();
             if (!row) return new Response("ok"); // not our order
             await svc.settlePayment(row.id, { ...pay, order_id: orderId });
             return new Response("ok");

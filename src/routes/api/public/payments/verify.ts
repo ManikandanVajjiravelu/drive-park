@@ -6,9 +6,7 @@ export const Route = createFileRoute("/api/public/payments/verify")({
   server: {
     handlers: {
       OPTIONS: options,
-      POST: handle(async ({ ctx, body }) =>
-        (await import("@/lib/payments.server")).verifyPayment(ctx, verifySchema.parse(body)),
-      ),
+      POST: handle(async ({ ctx, body }) => (await import("@/lib/payments.server")).verifyPayment(ctx, verifySchema.parse(body))),
     },
   },
 });

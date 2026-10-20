@@ -6,11 +6,7 @@ export const Route = createFileRoute("/api/public/payments/order")({
   server: {
     handlers: {
       OPTIONS: options,
-      POST: handle(
-        async ({ ctx, body }) =>
-          (await import("@/lib/payments.server")).createOrder(ctx, orderSchema.parse(body)),
-        { idempotent: "payments_order" },
-      ),
+      POST: handle(async ({ ctx, body }) => (await import("@/lib/payments.server")).createOrder(ctx, orderSchema.parse(body)), { idempotent: "payments_order" }),
     },
   },
 });

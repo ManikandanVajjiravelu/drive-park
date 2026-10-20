@@ -51,8 +51,11 @@ import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
 import { Route as ApiPublicRazorpayWebhookRouteImport } from './routes/api/public/razorpay-webhook'
 import { Route as ApiPublicBookingsIndexRouteImport } from './routes/api/public/bookings/index'
 import { Route as ApiPublicCronPaymentsRouteImport } from './routes/api/public/cron/payments'
+import { Route as ApiPublicNotificationsIndexRouteImport } from './routes/api/public/notifications/index'
 import { Route as ApiPublicPaymentsOrderRouteImport } from './routes/api/public/payments/order'
 import { Route as ApiPublicPaymentsVerifyRouteImport } from './routes/api/public/payments/verify'
+import { Route as ApiPublicProfileIndexRouteImport } from './routes/api/public/profile/index'
+import { Route as ApiPublicVehiclesIndexRouteImport } from './routes/api/public/vehicles/index'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
@@ -283,6 +286,12 @@ const ApiPublicCronPaymentsRoute = ApiPublicCronPaymentsRouteImport.update({
   path: '/api/public/cron/payments',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicNotificationsIndexRoute =
+  ApiPublicNotificationsIndexRouteImport.update({
+    id: '/api/public/notifications/',
+    path: '/api/public/notifications/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicPaymentsOrderRoute = ApiPublicPaymentsOrderRouteImport.update({
   id: '/api/public/payments/order',
   path: '/api/public/payments/order',
@@ -291,6 +300,16 @@ const ApiPublicPaymentsOrderRoute = ApiPublicPaymentsOrderRouteImport.update({
 const ApiPublicPaymentsVerifyRoute = ApiPublicPaymentsVerifyRouteImport.update({
   id: '/api/public/payments/verify',
   path: '/api/public/payments/verify',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicProfileIndexRoute = ApiPublicProfileIndexRouteImport.update({
+  id: '/api/public/profile/',
+  path: '/api/public/profile/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicVehiclesIndexRoute = ApiPublicVehiclesIndexRouteImport.update({
+  id: '/api/public/vehicles/',
+  path: '/api/public/vehicles/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LovableEmailAuthPreviewRoute = LovableEmailAuthPreviewRouteImport.update({
@@ -369,6 +388,9 @@ export interface FileRoutesByFullPath {
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/api/public/bookings/': typeof ApiPublicBookingsIndexRoute
+  '/api/public/notifications/': typeof ApiPublicNotificationsIndexRoute
+  '/api/public/profile/': typeof ApiPublicProfileIndexRoute
+  '/api/public/vehicles/': typeof ApiPublicVehiclesIndexRoute
   '/api/public/bookings/$id/$action': typeof ApiPublicBookingsIdActionRoute
   '/api/public/payments/$reservationId/status': typeof ApiPublicPaymentsReservationIdStatusRoute
 }
@@ -418,6 +440,9 @@ export interface FileRoutesByTo {
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/api/public/bookings': typeof ApiPublicBookingsIndexRoute
+  '/api/public/notifications': typeof ApiPublicNotificationsIndexRoute
+  '/api/public/profile': typeof ApiPublicProfileIndexRoute
+  '/api/public/vehicles': typeof ApiPublicVehiclesIndexRoute
   '/api/public/bookings/$id/$action': typeof ApiPublicBookingsIdActionRoute
   '/api/public/payments/$reservationId/status': typeof ApiPublicPaymentsReservationIdStatusRoute
 }
@@ -470,6 +495,9 @@ export interface FileRoutesById {
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/api/public/bookings/': typeof ApiPublicBookingsIndexRoute
+  '/api/public/notifications/': typeof ApiPublicNotificationsIndexRoute
+  '/api/public/profile/': typeof ApiPublicProfileIndexRoute
+  '/api/public/vehicles/': typeof ApiPublicVehiclesIndexRoute
   '/api/public/bookings/$id/$action': typeof ApiPublicBookingsIdActionRoute
   '/api/public/payments/$reservationId/status': typeof ApiPublicPaymentsReservationIdStatusRoute
 }
@@ -522,6 +550,9 @@ export interface FileRouteTypes {
     | '/lovable/email/auth/webhook'
     | '/lovable/email/transactional/preview'
     | '/api/public/bookings/'
+    | '/api/public/notifications/'
+    | '/api/public/profile/'
+    | '/api/public/vehicles/'
     | '/api/public/bookings/$id/$action'
     | '/api/public/payments/$reservationId/status'
   fileRoutesByTo: FileRoutesByTo
@@ -571,6 +602,9 @@ export interface FileRouteTypes {
     | '/lovable/email/auth/webhook'
     | '/lovable/email/transactional/preview'
     | '/api/public/bookings'
+    | '/api/public/notifications'
+    | '/api/public/profile'
+    | '/api/public/vehicles'
     | '/api/public/bookings/$id/$action'
     | '/api/public/payments/$reservationId/status'
   id:
@@ -622,6 +656,9 @@ export interface FileRouteTypes {
     | '/lovable/email/auth/webhook'
     | '/lovable/email/transactional/preview'
     | '/api/public/bookings/'
+    | '/api/public/notifications/'
+    | '/api/public/profile/'
+    | '/api/public/vehicles/'
     | '/api/public/bookings/$id/$action'
     | '/api/public/payments/$reservationId/status'
   fileRoutesById: FileRoutesById
@@ -647,6 +684,9 @@ export interface RootRouteChildren {
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
   LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
   ApiPublicBookingsIndexRoute: typeof ApiPublicBookingsIndexRoute
+  ApiPublicNotificationsIndexRoute: typeof ApiPublicNotificationsIndexRoute
+  ApiPublicProfileIndexRoute: typeof ApiPublicProfileIndexRoute
+  ApiPublicVehiclesIndexRoute: typeof ApiPublicVehiclesIndexRoute
   ApiPublicBookingsIdActionRoute: typeof ApiPublicBookingsIdActionRoute
   ApiPublicPaymentsReservationIdStatusRoute: typeof ApiPublicPaymentsReservationIdStatusRoute
 }
@@ -947,6 +987,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicCronPaymentsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/notifications/': {
+      id: '/api/public/notifications/'
+      path: '/api/public/notifications'
+      fullPath: '/api/public/notifications/'
+      preLoaderRoute: typeof ApiPublicNotificationsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/payments/order': {
       id: '/api/public/payments/order'
       path: '/api/public/payments/order'
@@ -959,6 +1006,20 @@ declare module '@tanstack/react-router' {
       path: '/api/public/payments/verify'
       fullPath: '/api/public/payments/verify'
       preLoaderRoute: typeof ApiPublicPaymentsVerifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/profile/': {
+      id: '/api/public/profile/'
+      path: '/api/public/profile'
+      fullPath: '/api/public/profile/'
+      preLoaderRoute: typeof ApiPublicProfileIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/vehicles/': {
+      id: '/api/public/vehicles/'
+      path: '/api/public/vehicles'
+      fullPath: '/api/public/vehicles/'
+      preLoaderRoute: typeof ApiPublicVehiclesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/lovable/email/auth/preview': {
@@ -1097,6 +1158,9 @@ const rootRouteChildren: RootRouteChildren = {
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
   LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
   ApiPublicBookingsIndexRoute: ApiPublicBookingsIndexRoute,
+  ApiPublicNotificationsIndexRoute: ApiPublicNotificationsIndexRoute,
+  ApiPublicProfileIndexRoute: ApiPublicProfileIndexRoute,
+  ApiPublicVehiclesIndexRoute: ApiPublicVehiclesIndexRoute,
   ApiPublicBookingsIdActionRoute: ApiPublicBookingsIdActionRoute,
   ApiPublicPaymentsReservationIdStatusRoute:
     ApiPublicPaymentsReservationIdStatusRoute,
