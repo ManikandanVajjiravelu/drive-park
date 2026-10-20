@@ -109,6 +109,15 @@ function Landing() {
         >
           I already have an account
         </Link>
+        <div className="flex items-center justify-center gap-4 pt-2 text-xs font-semibold text-muted-foreground">
+          <Link to="/privacy" className="underline underline-offset-2">
+            Privacy Policy
+          </Link>
+          <span aria-hidden>·</span>
+          <Link to="/terms" className="underline underline-offset-2">
+            Terms of Service
+          </Link>
+        </div>
       </div>
     </div>
   );
