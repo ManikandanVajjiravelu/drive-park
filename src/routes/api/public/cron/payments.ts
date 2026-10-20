@@ -9,7 +9,10 @@ export const Route = createFileRoute("/api/public/cron/payments")({
         const header = request.headers.get("authorization") ?? "";
         const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const { data: ok } = await supabaseAdmin.rpc("verify_internal_token", { _name: "payments_cron", _token: token });
+        const { data: ok } = await supabaseAdmin.rpc("verify_internal_token", {
+          _name: "payments_cron",
+          _token: token,
+        });
         if (!ok) return new Response("Unauthorized", { status: 401 });
         const { runMaintenance } = await import("@/lib/payments.server");
         const out = await runMaintenance();

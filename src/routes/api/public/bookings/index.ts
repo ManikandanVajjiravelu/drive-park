@@ -6,10 +6,13 @@ export const Route = createFileRoute("/api/public/bookings/")({
   server: {
     handlers: {
       OPTIONS: options,
-      POST: handle(async ({ ctx, body }) => {
-        const { createBooking } = await import("@/lib/bookings.server");
-        return createBooking(ctx.userId, createBookingSchema.parse(body));
-      }, { idempotent: "bookings_create" }),
+      POST: handle(
+        async ({ ctx, body }) => {
+          const { createBooking } = await import("@/lib/bookings.server");
+          return createBooking(ctx.userId, createBookingSchema.parse(body));
+        },
+        { idempotent: "bookings_create" },
+      ),
     },
   },
 });

@@ -15,7 +15,11 @@ export const Route = createFileRoute("/api/public/bookings/$id/$action")({
           case "end":
             return svc.endSession(ctx.userId, id);
           case "extend":
-            return svc.extendBooking(ctx.userId, id, z.object({ minutes: z.number().int() }).parse(body).minutes);
+            return svc.extendBooking(
+              ctx.userId,
+              id,
+              z.object({ minutes: z.number().int() }).parse(body).minutes,
+            );
           default:
             throw new HttpError("Unknown action", 404);
         }
