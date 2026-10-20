@@ -1,0 +1,27 @@
+{
+  "name": "Usop",
+  "short_name": "Usop",
+  "description": "Find and rent parking",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#1B1730",
+  "theme_color": "#443A78",
+  "icons": [
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
