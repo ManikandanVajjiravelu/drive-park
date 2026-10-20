@@ -34,3 +34,5 @@ dist-ssr
 .env.*.local
 /test-results/
 /playwright-report/
+.aider*
+.env

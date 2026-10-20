@@ -19,18 +19,18 @@ function Terms() {
         </div>
 
         <Section title="A marketplace">
-          Usop is a marketplace that connects drivers looking for parking with landowners who
-          have space to rent. We are not the owner or operator of any listed space.
+          Usop is a marketplace that connects drivers looking for parking with landowners who have
+          space to rent. We are not the owner or operator of any listed space.
         </Section>
 
         <Section title="Landowner responsibility">
-          Landowners are responsible for their own listings — including the accuracy of the
-          address, availability, pricing and access instructions they publish.
+          Landowners are responsible for their own listings — including the accuracy of the address,
+          availability, pricing and access instructions they publish.
         </Section>
 
         <Section title="Refunds">
-          Refunds follow the cancellation policy shown on each slot at the time of booking.
-          Please check the policy before you reserve.
+          Refunds follow the cancellation policy shown on each slot at the time of booking. Please
+          check the policy before you reserve.
         </Section>
 
         <Section title="Governing law">

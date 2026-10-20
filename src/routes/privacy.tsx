@@ -19,14 +19,14 @@ function Privacy() {
         </div>
 
         <Section title="What we collect">
-          We collect your name, phone number, email address, approximate location, vehicle
-          details and booking history so we can match you with parking spaces and keep your
-          reservations working.
+          We collect your name, phone number, email address, approximate location, vehicle details
+          and booking history so we can match you with parking spaces and keep your reservations
+          working.
         </Section>
 
         <Section title="Payments">
-          Payments are processed by Razorpay. We never store your card details — card data
-          goes directly to Razorpay and stays with them.
+          Payments are processed by Razorpay. We never store your card details — card data goes
+          directly to Razorpay and stays with them.
         </Section>
 
         <Section title="Where data is stored">
@@ -34,9 +34,9 @@ function Privacy() {
         </Section>
 
         <Section title="Deleting your data">
-          You can request deletion of your account and personal data at any time by emailing
-          us. We will remove your data within a reasonable period, except where we are
-          required to keep records by law.
+          You can request deletion of your account and personal data at any time by emailing us. We
+          will remove your data within a reasonable period, except where we are required to keep
+          records by law.
         </Section>
 
         <div className="pt-4">
