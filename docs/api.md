@@ -50,6 +50,18 @@ No bearer; verified by `X-Razorpay-Signature` (HMAC with `RAZORPAY_WEBHOOK_SECRE
 
 Internal token only. Expires unpaid holds, retries queued refunds (backoff), reconciles payments stuck >30 min in created/authorized.
 
+## Rate limits (mobile endpoints)
+
+Per-user, per-minute, POST only — GETs are unthrottled. Enforced by `rateLimit(userId, bucket)` in `src/lib/payments.server.ts`; values live in `REFUND_CONFIG.rateLimits` (`src/lib/refund-policy.ts`).
+
+| Endpoint | Bucket | Limit |
+|---|---|---|
+| `POST /api/public/profile` | `mobile_profile` | 30/min |
+| `POST /api/public/vehicles` | `mobile_vehicles` | 30/min |
+| `POST /api/public/notifications` | `mobile_notifications` | 30/min |
+
+Exceeding a limit returns `429` with the message `Too many requests. Please wait a minute and try again.`
+
 ## Refund policy (single source: `src/lib/refund-policy.ts`)
 
 - Flexible: 100% until start. Moderate: 100% until 24h before, 50% inside. Strict: 100% until 48h before, 0% inside.
