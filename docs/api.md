@@ -33,9 +33,9 @@ Body: `{ "action": "create" | "extend" | "end" | "cancel", ... }`
 
 - `GET` → the caller's vehicles, newest first.
 - `POST` body is a discriminated union on `action`:
-  - `{ "action": "create", "plate": string, "make"?: string|null, "colour"?: string|null, "is_default"?: boolean }`. `plate` is normalised (uppercased, spaces/hyphens stripped) and validated against the Indian plate pattern (e.g. `TN01AB1234`). `make` is validated as a model name when present. The first vehicle for a user is automatically default unless `is_default` is set. Returns the created row.
+  - `{ "action": "create", "plate": string, "make"?: string|null, "colour"?: string|null, "is_default"?: boolean }`. `plate` is normalised (uppercased, spaces/hyphens stripped) and validated against the Indian plate pattern (e.g. `TN01AB1234`). `make` is validated as a model name when present. The first vehicle for a user is automatically default unless `is_default` is set. Capped at 10 vehicles per user; returns `409` with `Vehicle limit reached` on create at the cap (app-level only — two concurrent creates at 9 may reach 11). Returns the created row. 
   - `{ "action": "delete", "id": uuid }` → `{ deleted: true, id }`. `404` if the vehicle is not the caller's.
-  - `{ "action": "set_default", "id": uuid }` → clears `is_default` on all of the caller's vehicles, then sets it on `id`. Returns the updated row. `404` if not the caller's.
+  - `{ "action": "set_default", "id": uuid }` → sets `is_default` on `id` first, then clears it on the caller's other vehicles. Returns the updated row. `404` if not the caller's.
 
 ## Notifications — `GET /api/public/notifications` and `POST /api/public/notifications`
 
