@@ -54,6 +54,8 @@ type WindowQuery = {
   startTime: string;
   duration: number;
   rateType: "hourly" | "daily" | "monthly";
+  lat: number;
+  lng: number;
 };
 
 function haversine(a: [number, number], b: [number, number]) {
@@ -122,7 +124,13 @@ function MapPage() {
   function submitWindow() {
     const ms = Date.parse(arrive);
     if (Number.isNaN(ms) || !lengthOk) return;
-    setWin({ startTime: new Date(ms).toISOString(), duration: length, rateType: rate });
+    setWin({
+      startTime: new Date(ms).toISOString(),
+      duration: length,
+      rateType: rate,
+      lat: anchor[0],
+      lng: anchor[1],
+    });
   }
   const results = useMemo(
     () => new Map((search.data ?? []).map((r) => [r.slotId, r])),
