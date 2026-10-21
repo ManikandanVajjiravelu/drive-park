@@ -17,7 +17,11 @@ export function SlotForm({ initial, mode }: { initial?: Partial<Slot>; mode: Mod
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [busy, setBusy] = useState(false);
-  const [copies, setCopies] = useState(1);
+  const [copiesText, setCopiesText] = useState("1");
+  const copies = (() => {
+    const n = parseInt(copiesText, 10);
+    return Number.isNaN(n) ? 1 : Math.min(10, Math.max(1, n));
+  })();
   const [form, setForm] = useState({
     name: initial?.name ?? "",
     approx_area: initial?.approx_area ?? "",
@@ -113,11 +117,8 @@ export function SlotForm({ initial, mode }: { initial?: Partial<Slot>; mode: Mod
           min={1}
           max={10}
           step={1}
-          value={copies}
-          onChange={(e) => {
-            const n = parseInt(e.target.value, 10);
-            setCopies(Number.isNaN(n) ? 1 : Math.min(10, Math.max(1, n)));
-          }}
+          value={copiesText}
+          onChange={(e) => setCopiesText(e.target.value)}
         />
       )}
 
