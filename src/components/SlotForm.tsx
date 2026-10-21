@@ -80,7 +80,7 @@ export function SlotForm({ initial, mode }: { initial?: Partial<Slot>; mode: Mod
         const rows = Array.from({ length: copies }, (_, i) => ({
           ...payload,
           owner_id: user.id,
-          status: "open",
+          status: "open" as const,
           name: copies > 1 ? payload.name + " " + (i + 1) : payload.name,
         }));
         const { error } = await supabase.from("slots").insert(rows);
