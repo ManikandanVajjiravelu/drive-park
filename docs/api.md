@@ -44,6 +44,8 @@ Body: `{ "action": "create" | "extend" | "end" | "cancel", ... }`
   - `{ "action": "mark_read", "id": uuid }` → `{ updated: 1, id }`. `404` if not the caller's.
   - `{ "action": "mark_all_read" }` → `{ updated: n }` (number of unread rows flipped).
 
+## Webhook — `POST /api/public/razorpay-webhook`
+
 No bearer; verified by `X-Razorpay-Signature` (HMAC with `RAZORPAY_WEBHOOK_SECRET`). Replays dropped by `x-razorpay-event-id`. Events: `payment.authorized`, `payment.captured`, `payment.failed`, `order.paid`, `refund.processed`, `refund.failed`.
 
 ## Maintenance — `POST /api/public/cron/payments`
