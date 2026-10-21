@@ -16,6 +16,7 @@ function Terms() {
           <p className="mt-1 text-sm text-muted-foreground">
             The rules for using Usop as a driver or a landowner.
           </p>
+          <p className="mt-2 text-xs text-muted-foreground">Last updated: October 2026</p>
         </div>
 
         <Section title="A marketplace">

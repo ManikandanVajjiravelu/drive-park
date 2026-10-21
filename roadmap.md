@@ -7,4 +7,4 @@
 - [ ] Mobile API endpoints
 - [ ] Capacitor Android pilot
 - [ ] Razorpay live-mode test
-- [ ] Privacy policy and terms pages
+- [x] Privacy policy and terms pages

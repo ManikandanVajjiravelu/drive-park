@@ -16,6 +16,7 @@ function Privacy() {
           <p className="mt-1 text-sm text-muted-foreground">
             How Usop collects, uses and protects your data.
           </p>
+          <p className="mt-2 text-xs text-muted-foreground">Last updated: October 2026</p>
         </div>
 
         <Section title="What we collect">
@@ -33,10 +34,20 @@ function Privacy() {
           Your data is stored securely in Supabase, our database and authentication provider.
         </Section>
 
+        <Section title="Your location">
+          The exact address of a parking space is shown to a driver only after a booking is fully
+          paid. Before that, only an approximate area is shown.
+        </Section>
+
+        <Section title="How long we keep data">
+          Account data is kept while your account is active. Booking and payment records are kept
+          for as long as the law requires.
+        </Section>
+
         <Section title="Deleting your data">
-          You can request deletion of your account and personal data at any time by emailing us. We
-          will remove your data within a reasonable period, except where we are required to keep
-          records by law.
+          You can request deletion of your account and personal data at any time by emailing
+          support@usop.in. We will remove your data within a reasonable period, except where we are
+          required to keep records by law.
         </Section>
 
         <div className="pt-4">
