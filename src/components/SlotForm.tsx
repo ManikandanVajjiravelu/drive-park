@@ -17,6 +17,7 @@ export function SlotForm({ initial, mode }: { initial?: Partial<Slot>; mode: Mod
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [busy, setBusy] = useState(false);
+  const [copies, setCopies] = useState(1);
   const [form, setForm] = useState({
     name: initial?.name ?? "",
     approx_area: initial?.approx_area ?? "",
@@ -76,11 +77,15 @@ export function SlotForm({ initial, mode }: { initial?: Partial<Slot>; mode: Mod
         slot_type: form.slot_type,
       };
       if (mode.kind === "create") {
-        const { error } = await supabase
-          .from("slots")
-          .insert({ ...payload, owner_id: user.id, status: "open" });
+        const rows = Array.from({ length: copies }, (_, i) => ({
+          ...payload,
+          owner_id: user.id,
+          status: "open",
+          name: copies > 1 ? payload.name + " " + (i + 1) : payload.name,
+        }));
+        const { error } = await supabase.from("slots").insert(rows);
         if (error) throw error;
-        toast.success("Slot added");
+        toast.success(copies === 1 ? "Slot added" : copies + " slots added");
       } else {
         const { error } = await supabase.from("slots").update(payload).eq("id", mode.slotId);
         if (error) throw error;
@@ -100,6 +105,21 @@ export function SlotForm({ initial, mode }: { initial?: Partial<Slot>; mode: Mod
   return (
     <form onSubmit={save} className="px-5 py-4 space-y-3">
       <Field label="Name" value={form.name} onChange={set("name")} required />
+
+      {mode.kind === "create" && (
+        <Field
+          label="Number of identical spaces"
+          type="number"
+          min={1}
+          max={10}
+          step={1}
+          value={copies}
+          onChange={(e) => {
+            const n = parseInt(e.target.value, 10);
+            setCopies(Number.isNaN(n) ? 1 : Math.min(10, Math.max(1, n)));
+          }}
+        />
+      )}
 
       <div>
         <span className="text-xs font-semibold text-muted-foreground uppercase">Location</span>
