@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { handle, options, HttpError } from "@/lib/api-auth";
 import { vehiclesActionSchema } from "@/lib/mobile.schema";
+import { rateLimit } from "@/lib/payments.server";
 
 export const Route = createFileRoute("/api/public/vehicles/")({
   server: {
@@ -16,6 +17,7 @@ export const Route = createFileRoute("/api/public/vehicles/")({
         return data ?? [];
       }),
       POST: handle(async ({ ctx, body }) => {
+        await rateLimit(ctx.userId, "mobile_vehicles");
         const input = vehiclesActionSchema.parse(body);
 
         if (input.action === "create") {
@@ -24,6 +26,8 @@ export const Route = createFileRoute("/api/public/vehicles/")({
             .select("id", { count: "exact", head: true })
             .eq("user_id", ctx.userId);
           if (countErr) throw new HttpError(countErr.message, 500);
+          // App-level cap only: no DB constraint, so two concurrent creates at 9 can reach 11.
+          if ((count ?? 0) >= 10) throw new HttpError("Vehicle limit reached", 409);
           const isFirst = (count ?? 0) === 0;
           const { data, error } = await ctx.supabase
             .from("vehicles")
@@ -63,12 +67,8 @@ export const Route = createFileRoute("/api/public/vehicles/")({
         if (findErr) throw new HttpError(findErr.message, 500);
         if (!target) throw new HttpError("Vehicle not found", 404);
 
-        const { error: clearErr } = await ctx.supabase
-          .from("vehicles")
-          .update({ is_default: false })
-          .eq("user_id", ctx.userId);
-        if (clearErr) throw new HttpError(clearErr.message, 500);
-
+        // Set the target first, then clear the others: the user never has zero defaults.
+        // Tradeoff: if the clear fails, two rows stay default (recoverable) instead of none.
         const { data, error } = await ctx.supabase
           .from("vehicles")
           .update({ is_default: true })
@@ -77,6 +77,14 @@ export const Route = createFileRoute("/api/public/vehicles/")({
           .select("*")
           .single();
         if (error) throw new HttpError(error.message, 400);
+
+        const { error: clearErr } = await ctx.supabase
+          .from("vehicles")
+          .update({ is_default: false })
+          .eq("user_id", ctx.userId)
+          .neq("id", input.id);
+        if (clearErr) throw new HttpError(clearErr.message, 500);
+
         return data;
       }),
     },

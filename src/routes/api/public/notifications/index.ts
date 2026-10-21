@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { handle, options, HttpError } from "@/lib/api-auth";
 import { notificationsActionSchema } from "@/lib/mobile.schema";
+import { rateLimit } from "@/lib/payments.server";
 
 export const Route = createFileRoute("/api/public/notifications/")({
   server: {
@@ -17,6 +18,7 @@ export const Route = createFileRoute("/api/public/notifications/")({
         return data ?? [];
       }),
       POST: handle(async ({ ctx, body }) => {
+        await rateLimit(ctx.userId, "mobile_notifications");
         const input = notificationsActionSchema.parse(body);
 
         if (input.action === "mark_read") {

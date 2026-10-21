@@ -34,6 +34,10 @@ export const REFUND_CONFIG = {
     admin_refund: 30,
     /** Time-window searches per minute. */
     search_window: 30,
+    /** Mobile /api/public/* mutating endpoints (POST only), per minute. */
+    mobile_profile: 30,
+    mobile_vehicles: 30,
+    mobile_notifications: 30,
   },
   /** Payments stuck in created/authorized longer than this are reconciled with Razorpay. */
   reconcileAfterMinutes: 30,

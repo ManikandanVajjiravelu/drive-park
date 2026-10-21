@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { handle, options, HttpError } from "@/lib/api-auth";
 import { updateProfileSchema } from "@/lib/mobile.schema";
+import { rateLimit } from "@/lib/payments.server";
 
 export const Route = createFileRoute("/api/public/profile/")({
   server: {
@@ -17,6 +18,7 @@ export const Route = createFileRoute("/api/public/profile/")({
         return data;
       }),
       POST: handle(async ({ ctx, body }) => {
+        await rateLimit(ctx.userId, "mobile_profile");
         const input = updateProfileSchema.parse(body);
         const { data, error } = await ctx.supabase
           .from("profiles")
