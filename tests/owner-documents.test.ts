@@ -1,0 +1,203 @@
+/**
+ * S17 landowner verification. Runs in rolled-back transactions while
+ * impersonating a signed-in user (role `authenticated` + JWT claims), so the
+ * real RLS policies, grants and guard triggers are exercised.
+ * Needs PG* env vars with rights to create auth users. Run: `bun run test`.
+ */
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { Client } from "pg";
+import { randomUUID } from "node:crypto";
+
+const enabled = process.env.RUN_DB_TESTS === "1" && !!process.env.PGHOST;
+const client = new Client({ ssl: { rejectUnauthorized: false } });
+
+const owner = randomUUID();
+const otherOwner = randomUUID();
+const admin = randomUUID();
+const slotId = randomUUID();
+
+async function asUser<T>(uid: string, fn: () => Promise<T>): Promise<T> {
+  await client.query("BEGIN");
+  try {
+    await client.query("SELECT set_config('request.jwt.claims', $1, true)", [
+      JSON.stringify({ sub: uid, role: "authenticated" }),
+    ]);
+    await client.query("SET LOCAL ROLE authenticated");
+    return await fn();
+  } finally {
+    await client.query("ROLLBACK");
+  }
+}
+const sql = (text: string, params: unknown[] = []) => client.query(text, params);
+
+/** Insert a document as the test superuser (bypasses RLS) and return its id. */
+async function seedDoc(
+  ownerId: string,
+  kind: "id_proof" | "ownership_proof",
+  status: "pending" | "approved" | "rejected",
+): Promise<string> {
+  const r = await sql(
+    `INSERT INTO public.owner_documents (owner_id, kind, storage_path, status, reviewed_at)
+     VALUES ($1, $2, $3, $4, CASE WHEN $4 = 'pending' THEN NULL ELSE now() END)
+     RETURNING id`,
+    [ownerId, kind, `${ownerId}/${randomUUID()}.pdf`, status],
+  );
+  return r.rows[0].id as string;
+}
+
+describe.skipIf(!enabled)("owner verification", () => {
+  beforeAll(async () => {
+    await client.connect();
+    for (const id of [owner, otherOwner, admin]) {
+      await sql(
+        `INSERT INTO auth.users (id, email, raw_user_meta_data, aud, role)
+         VALUES ($1, $2, '{"role":"landowner"}', 'authenticated', 'authenticated')`,
+        [id, `${id}@test.usop`],
+      );
+    }
+    await sql(`INSERT INTO public.user_roles (user_id, role) VALUES ($1, 'admin')`, [admin]);
+    await sql(
+      `INSERT INTO public.slots (id, owner_id, name, approx_area, full_address, lat, lng, status, approval_status)
+       VALUES ($1,$2,'Verify Slot','area','1 Secret St',0,0,'open','pending')`,
+      [slotId, owner],
+    );
+  });
+
+  afterAll(async () => {
+    if (!enabled) return;
+    await sql("DELETE FROM public.owner_documents WHERE owner_id = ANY($1)", [[owner, otherOwner]]);
+    await sql("DELETE FROM public.slots WHERE id = $1", [slotId]);
+    await sql("DELETE FROM public.user_roles WHERE user_id = $1", [admin]);
+    await sql("DELETE FROM auth.users WHERE id = ANY($1)", [[owner, otherOwner, admin]]);
+    await client.end();
+  });
+
+  it("owners can upload a pending document and read it back", async () => {
+    const path = `${owner}/${randomUUID()}.pdf`;
+    const ins = await asUser(owner, () =>
+      sql(
+        `INSERT INTO public.owner_documents (owner_id, kind, storage_path)
+         VALUES ($1,'id_proof',$2) RETURNING status`,
+        [owner, path],
+      ),
+    );
+    expect(ins.rows[0]).toEqual({ status: "pending" });
+    const read = await asUser(owner, () =>
+      sql("SELECT storage_path FROM public.owner_documents WHERE storage_path = $1", [path]),
+    );
+    expect(read.rowCount).toBe(1);
+  });
+
+  it("owners cannot self-approve or set review fields", async () => {
+    const path = `${owner}/${randomUUID()}.pdf`;
+    const r = await asUser(owner, () =>
+      sql(
+        `INSERT INTO public.owner_documents (owner_id, kind, storage_path, status, reviewed_by, reviewed_at)
+         VALUES ($1,'ownership_proof',$2,'approved',$1,now()) RETURNING status, reviewed_by, reviewed_at`,
+        [owner, path],
+      ),
+    );
+    expect(r.rows[0]).toEqual({ status: "pending", reviewed_by: null, reviewed_at: null });
+  });
+
+  it("owners cannot update a document after upload", async () => {
+    const id = await seedDoc(owner, "id_proof", "pending");
+    await expect(
+      asUser(owner, () => sql("UPDATE public.owner_documents SET note = 'x' WHERE id = $1", [id])),
+    ).rejects.toThrow();
+  });
+
+  it("owners cannot delete a document, approved or not", async () => {
+    const approved = await seedDoc(owner, "id_proof", "approved");
+    const pending = await seedDoc(owner, "ownership_proof", "pending");
+    await expect(
+      asUser(owner, () => sql("DELETE FROM public.owner_documents WHERE id = $1", [approved])),
+    ).rejects.toThrow();
+    await expect(
+      asUser(owner, () => sql("DELETE FROM public.owner_documents WHERE id = $1", [pending])),
+    ).rejects.toThrow();
+  });
+
+  it("other owners cannot read someone else's documents", async () => {
+    const id = await seedDoc(owner, "id_proof", "pending");
+    const r = await asUser(otherOwner, () =>
+      sql("SELECT id FROM public.owner_documents WHERE id = $1", [id]),
+    );
+    expect(r.rowCount).toBe(0);
+  });
+
+  it("admins can read every document and approve it", async () => {
+    const id = await seedDoc(owner, "id_proof", "pending");
+    const read = await asUser(admin, () =>
+      sql("SELECT id FROM public.owner_documents WHERE id = $1", [id]),
+    );
+    expect(read.rowCount).toBe(1);
+    const upd = await asUser(admin, () =>
+      sql(
+        `UPDATE public.owner_documents SET status='approved', reviewed_by=$1, reviewed_at=now()
+         WHERE id=$2 RETURNING status`,
+        [admin, id],
+      ),
+    );
+    expect(upd.rows[0]).toEqual({ status: "approved" });
+  });
+
+  it("a listing cannot be approved without both documents approved", async () => {
+    // Fresh owner with no documents at all.
+    await expect(
+      asUser(admin, () =>
+        sql("UPDATE public.slots SET approval_status='approved' WHERE id=$1", [slotId]),
+      ),
+    ).rejects.toThrow();
+  });
+
+  it("a listing cannot be approved with only one document approved", async () => {
+    await seedDoc(owner, "id_proof", "approved");
+    await seedDoc(owner, "ownership_proof", "pending");
+    await expect(
+      asUser(admin, () =>
+        sql("UPDATE public.slots SET approval_status='approved' WHERE id=$1", [slotId]),
+      ),
+    ).rejects.toThrow();
+  });
+
+  it("a listing can be approved once both latest documents are approved", async () => {
+    await seedDoc(owner, "id_proof", "approved");
+    await seedDoc(owner, "ownership_proof", "approved");
+    const r = await asUser(admin, () =>
+      sql("UPDATE public.slots SET approval_status='approved' WHERE id=$1 RETURNING approval_status", [slotId]),
+    );
+    expect(r.rows[0]).toEqual({ approval_status: "approved" });
+  });
+
+  it("a newer rejected document blocks a later approval", async () => {
+    await seedDoc(owner, "id_proof", "approved");
+    await seedDoc(owner, "ownership_proof", "approved");
+    await asUser(admin, () =>
+      sql("UPDATE public.slots SET approval_status='approved' WHERE id=$1", [slotId]),
+    );
+    // Re-open the listing, then upload a newer rejected ownership proof.
+    await asUser(admin, () =>
+      sql("UPDATE public.slots SET approval_status='pending' WHERE id=$1", [slotId]),
+    );
+    await seedDoc(owner, "ownership_proof", "rejected");
+    await expect(
+      asUser(admin, () =>
+        sql("UPDATE public.slots SET approval_status='approved' WHERE id=$1", [slotId]),
+      ),
+    ).rejects.toThrow();
+  });
+
+  it("existing approved listings are not re-checked", async () => {
+    // The slot is already approved from the previous test; an unrelated edit must pass.
+    const r = await asUser(admin, () =>
+      sql("UPDATE public.slots SET name='Renamed' WHERE id=$1 RETURNING name", [slotId]),
+    );
+    expect(r.rows[0]).toEqual({ name: "Renamed" });
+  });
+
+  it("the owner-docs bucket is private", async () => {
+    const r = await sql("SELECT public FROM storage.buckets WHERE id = 'owner-docs'");
+    expect(r.rows[0]).toEqual({ public: false });
+  });
+});

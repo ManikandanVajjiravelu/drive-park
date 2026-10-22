@@ -119,6 +119,57 @@ export type Database = BaseDatabase & {
         };
         Relationships: [];
       };
+      owner_documents: {
+        Row: {
+          id: string;
+          owner_id: string;
+          kind: "id_proof" | "ownership_proof";
+          storage_path: string;
+          status: "pending" | "approved" | "rejected";
+          note: string | null;
+          reviewed_by: string | null;
+          reviewed_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          owner_id: string;
+          kind: "id_proof" | "ownership_proof";
+          storage_path: string;
+          status?: "pending" | "approved" | "rejected";
+          note?: string | null;
+          reviewed_by?: string | null;
+          reviewed_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          owner_id?: string;
+          kind?: "id_proof" | "ownership_proof";
+          storage_path?: string;
+          status?: "pending" | "approved" | "rejected";
+          note?: string | null;
+          reviewed_by?: string | null;
+          reviewed_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "owner_documents_owner_id_fkey";
+            columns: ["owner_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "owner_documents_reviewed_by_fkey";
+            columns: ["reviewed_by"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       payments: {
         Row: {
           id: string;
