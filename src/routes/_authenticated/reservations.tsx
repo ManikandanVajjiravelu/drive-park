@@ -23,6 +23,7 @@ import { POLICY_META } from "@/lib/amenities";
 import { billedAmount } from "@/lib/money";
 import { cancellationRefundShare } from "@/lib/refund-policy";
 import { PayNowButton } from "@/components/PayNowButton";
+import { BookAgainButton } from "@/components/BookAgainButton";
 import type { Reservation, Slot } from "@/lib/queries";
 
 type ReservationWithSlot = Reservation & { slot: Slot | null };
@@ -167,13 +168,17 @@ function MyReservations() {
                       Leave review
                     </button>
                   )}
-                  <button
+                                    <button
                     onClick={() => setReceipt(r as ReservationWithSlot)}
                     className="text-xs font-semibold border border-border px-3 py-1.5 rounded-lg flex items-center gap-1"
                   >
                     <Receipt className="w-3 h-3" />
                     Receipt
                   </button>
+                  <BookAgainButton
+                    reservation={r}
+                    className="text-xs font-semibold border border-primary text-primary px-3 py-1.5 rounded-lg flex items-center gap-1"
+                  />
                 </div>
               </div>
             ))}

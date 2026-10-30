@@ -87,8 +87,9 @@ export type Reservation = {
     extra: number;
     expires_at: string;
   } | null;
+  arrived_at?: string | null;
+  late_notified_at?: string | null;
 };
-
 export type Review = {
   id: string;
   slot_id: string;

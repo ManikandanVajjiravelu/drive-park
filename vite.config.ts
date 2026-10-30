@@ -1,4 +1,4 @@
-// @lovable.dev/vite-tanstack-config already includes the following — do NOT add them manually
+// @lovable.dev/vite-tanstack-config already includes the following - do NOT add them manually
 // or the app will break with duplicate plugins:
 //   - TanStack devtools (dev-only, first), tanstackStart, viteReact, tailwindcss, tsConfigPaths,
 //     nitro (build-only using cloudflare as a default target), VITE_* env injection, @ path alias,
@@ -12,6 +12,11 @@ import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/tanstack/vite";
 // Load all env vars (including non-VITE_ ones) into process.env for server routes.
 Object.assign(process.env, loadEnv(process.env.NODE_ENV ?? "development", process.cwd(), ""));
 
+// @lovable.dev/mcp-js has a Windows path-separator bug: it compares a forward-slash
+// project root against a backslash path.resolve() result and wrongly fails.
+// Skip it on Windows; it still runs in Lovable's Linux builds.
+const isWindows = process.platform === "win32";
+
 export default defineConfig({
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
@@ -19,7 +24,7 @@ export default defineConfig({
     server: { entry: "server" },
   },
   vite: {
-    plugins: [mcpPlugin()],
+    plugins: isWindows ? [] : [mcpPlugin()],
     resolve: {
       alias: {
         "entities/lib/decode.js": path.resolve(

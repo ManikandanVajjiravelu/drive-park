@@ -233,6 +233,21 @@ export type Database = BaseDatabase & {
           }
         ];
       };
+      reservations: {
+        // Migration 0012 adds arrival tracking; coordinates are never collected.
+        Row: BaseDatabase["public"]["Tables"]["reservations"]["Row"] & {
+          arrived_at: string | null;
+          late_notified_at: string | null;
+        };
+        Insert: BaseDatabase["public"]["Tables"]["reservations"]["Insert"] & {
+          arrived_at?: string | null;
+          late_notified_at?: string | null;
+        };
+        Update: BaseDatabase["public"]["Tables"]["reservations"]["Update"] & {
+          arrived_at?: string | null;
+          late_notified_at?: string | null;
+        };
+      };
     };
     Enums: {
       slot_type: "standard_car" | "compact_car" | "suv_large" | "two_wheeler" | "ev_charging" | "premium_covered" | "valet_handicapped";
