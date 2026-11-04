@@ -2,9 +2,13 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabaseAdmin as rawAdmin } from "@/integrations/supabase/client.server";
 import {
   ARRIVE_EARLY_MINUTES,
+  ISSUE_RESOLUTION_MINUTES,
   LATE_GRACE_MINUTES,
+  PARKING_ISSUE_LABELS,
   canMarkArrived,
   canReportLate,
+  canReportParkingIssue,
+  type ParkingIssueType,
 } from "@/lib/arrival-window";
 import { PaymentError, rateLimit } from "@/lib/payments.server";
 import type { Database } from "@/types/supabase-augment";
@@ -20,7 +24,7 @@ const VALID_MINUTES = [5, 10, 15, 30] as const;
 type LateMinutes = (typeof VALID_MINUTES)[number];
 
 /** Rate limit first, so a burst of taps never reaches the database. */
-async function limit(userId: string, bucket: "arrival" | "late") {
+async function limit(userId: string, bucket: "arrival" | "late" | "arrival_issue") {
   try {
     await rateLimit(userId, bucket);
   } catch (e) {
@@ -34,6 +38,7 @@ async function limit(userId: string, bucket: "arrival" | "late") {
 async function notifyOwner(
   slotId: string,
   build: (slotName: string) => { type: string; title: string; body: string },
+  link = "/reservations",
 ) {
   const { data: slot } = await db
     .from("slots")
@@ -48,7 +53,7 @@ async function notifyOwner(
     type: message.type,
     title: message.title,
     body: message.body,
-    link: "/reservations",
+    link,
     read: false,
   });
 }
@@ -151,4 +156,90 @@ export async function markRunningLate(userId: string, reservationId: string, min
   }));
 
   return { lateNotifiedAt, minutes };
+}
+
+/**
+ * "Can't Park": the driver reports that the booked space is unusable. We record the
+ * report, flip the booking to `disputed` and tell the owner. Refunds are issued manually
+ * for now — `resolution_deadline` is only what the driver is promised in the UI.
+ */
+export async function reportArrivalIssue(
+  userId: string,
+  reservationId: string,
+  issueType: ParkingIssueType,
+  note?: string | null,
+) {
+  await limit(userId, "arrival_issue");
+
+  const { data: resv, error: rErr } = await db
+    .from("reservations")
+    .select("id, driver_id, slot_id, status, end_time")
+    .eq("id", reservationId)
+    .single();
+
+  if (rErr || !resv) throw new ArrivalError("Reservation not found");
+  if (resv.driver_id !== userId) throw new ArrivalError("Not your reservation");
+
+  // A retry (double tap, flaky network) is success, not a second dispute.
+  const { data: open } = await db
+    .from("arrival_issues")
+    .select("id, issue_type, status, resolution_deadline, created_at")
+    .eq("reservation_id", reservationId)
+    .eq("status", "pending")
+    .maybeSingle();
+  if (open) return { issue: open, alreadyReported: true };
+
+  if (!canReportParkingIssue(resv)) {
+    throw new ArrivalError(
+      resv.status !== "active"
+        ? `Cannot report a parking issue for ${resv.status} reservation`
+        : "This session has already ended",
+    );
+  }
+
+  const trimmed = note?.trim() || null;
+  const { data: issue, error: iErr } = await db
+    .from("arrival_issues")
+    .insert({
+      reservation_id: reservationId,
+      driver_id: userId,
+      issue_type: issueType,
+      note: trimmed,
+    })
+    .select("id, issue_type, status, resolution_deadline, created_at")
+    .single();
+
+  if (iErr || !issue) {
+    if (iErr?.code === "23505")
+      throw new ArrivalError("You already reported an issue for this booking");
+    console.error("arrival issue insert failed", iErr);
+    throw new ArrivalError("Could not record the issue");
+  }
+
+  // Freeze the booking so nothing else (extension, auto-complete warnings) hides the dispute.
+  const { data: disputed } = await db
+    .from("reservations")
+    .update({ status: "disputed" })
+    .eq("id", reservationId)
+    .eq("driver_id", userId)
+    .eq("status", "active")
+    .select("id");
+  if (!disputed?.length)
+    console.warn("arrival issue recorded but the reservation did not change status", {
+      reservationId,
+    });
+
+  await notifyOwner(
+    resv.slot_id,
+    (slotName) => ({
+      type: "arrival_issue",
+      title: "Can't Park: driver reported a problem",
+      body: `Driver reports "${PARKING_ISSUE_LABELS[issueType]}" at ${slotName}.${
+        trimmed ? ` Note: ${trimmed}` : ""
+      } Respond within ${ISSUE_RESOLUTION_MINUTES} minutes to avoid a refund.`,
+    }),
+    `/bookings?r=${reservationId}`,
+  );
+
+  return { issue, alreadyReported: false };
 }

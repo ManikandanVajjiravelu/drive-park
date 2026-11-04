@@ -248,6 +248,57 @@ export type Database = BaseDatabase & {
           late_notified_at?: string | null;
         };
       };
+      // Migration 0015: driver "Can't Park" reports (service_role writes only).
+      arrival_issues: {
+        Row: {
+          id: string;
+          reservation_id: string;
+          driver_id: string;
+          issue_type: "spot_occupied" | "gate_locked" | "wrong_address" | "other";
+          note: string | null;
+          status: "pending" | "resolved" | "rejected";
+          resolution_deadline: string;
+          resolved_at: string | null;
+          resolved_by: string | null;
+          resolution_note: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          reservation_id: string;
+          driver_id: string;
+          issue_type: "spot_occupied" | "gate_locked" | "wrong_address" | "other";
+          note?: string | null;
+          status?: "pending" | "resolved" | "rejected";
+          resolution_deadline?: string;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          resolution_note?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          reservation_id?: string;
+          driver_id?: string;
+          issue_type?: "spot_occupied" | "gate_locked" | "wrong_address" | "other";
+          note?: string | null;
+          status?: "pending" | "resolved" | "rejected";
+          resolution_deadline?: string;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          resolution_note?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "arrival_issues_reservation_id_fkey";
+            columns: ["reservation_id"];
+            isOneToOne: false;
+            referencedRelation: "reservations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Enums: {
       slot_type: "standard_car" | "compact_car" | "suv_large" | "two_wheeler" | "ev_charging" | "premium_covered" | "valet_handicapped";

@@ -77,9 +77,11 @@ function Bookings() {
                       className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
                         b.status === "active"
                           ? "bg-primary text-primary-foreground"
-                          : b.status === "completed"
-                            ? "bg-foreground text-background"
-                            : "bg-muted text-muted-foreground"
+                          : b.status === "disputed"
+                            ? "bg-destructive text-destructive-foreground"
+                            : b.status === "completed"
+                              ? "bg-foreground text-background"
+                              : "bg-muted text-muted-foreground"
                       }`}
                     >
                       {b.status}

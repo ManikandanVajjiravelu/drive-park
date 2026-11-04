@@ -437,7 +437,9 @@ export async function endSession(userId: string, id: string) {
       payment_expires_at: null,
     })
     .eq("id", id)
-    .in("status", ["active", "upcoming"])
+    // "disputed" is an active session with an open driver report: the driver must still be
+    // able to end it (the refund itself is handled by support while the report is open).
+    .in("status", ["active", "upcoming", "disputed"])
     .lte("start_time", new Date().toISOString())
     .select("id");
   if (!won?.length) throw new BookingError("Only an active session can be ended", 409);

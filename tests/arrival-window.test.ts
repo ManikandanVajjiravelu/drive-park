@@ -1,9 +1,13 @@
 import { describe, it, expect } from "vitest";
 import {
   ARRIVE_EARLY_MINUTES,
+  ISSUE_RESOLUTION_MINUTES,
   LATE_GRACE_MINUTES,
+  PARKING_ISSUE_LABELS,
+  PARKING_ISSUE_TYPES,
   canMarkArrived,
   canReportLate,
+  canReportParkingIssue,
 } from "@/lib/arrival-window";
 
 const START = "2026-10-04T10:00:00Z";
@@ -77,5 +81,52 @@ describe("canReportLate", () => {
 
   it("is closed for unparseable start times", () => {
     expect(canReportLate({ ...booking, start_time: "nope" }, startMs)).toBe(false);
+  });
+});
+
+describe("canReportParkingIssue", () => {
+  const active = { status: "active", end_time: END };
+
+  it("is open during an active session", () => {
+    expect(canReportParkingIssue(active, startMs)).toBe(true);
+    expect(canReportParkingIssue(active, startMs + 30 * MIN)).toBe(true);
+  });
+
+  it("is open up to and including the end time", () => {
+    expect(canReportParkingIssue(active, endMs)).toBe(true);
+    expect(canReportParkingIssue(active, endMs + 1)).toBe(false);
+  });
+
+  it("is closed before the session starts", () => {
+    expect(canReportParkingIssue({ status: "upcoming", end_time: END }, startMs - MIN)).toBe(false);
+  });
+
+  it("is closed for completed, cancelled and disputed bookings", () => {
+    expect(canReportParkingIssue({ status: "completed", end_time: END }, startMs)).toBe(false);
+    expect(canReportParkingIssue({ status: "cancelled", end_time: END }, startMs)).toBe(false);
+    expect(canReportParkingIssue({ status: "disputed", end_time: END }, startMs)).toBe(false);
+  });
+
+  it("is closed while a report is already open", () => {
+    expect(canReportParkingIssue({ ...active, pending_issue: true }, startMs)).toBe(false);
+  });
+
+  it("allows a second report once the first one is closed", () => {
+    expect(canReportParkingIssue({ ...active, pending_issue: false }, startMs)).toBe(true);
+  });
+
+  it("is closed for unparseable end times", () => {
+    expect(canReportParkingIssue({ status: "active", end_time: "nope" }, startMs)).toBe(false);
+  });
+});
+
+describe("parking issue reasons", () => {
+  it("offers a label for every allowed reason", () => {
+    for (const t of PARKING_ISSUE_TYPES) expect(PARKING_ISSUE_LABELS[t]).toBeTruthy();
+    expect(Object.keys(PARKING_ISSUE_LABELS).sort()).toEqual([...PARKING_ISSUE_TYPES].sort());
+  });
+
+  it("promises the owner a 15 minute window", () => {
+    expect(ISSUE_RESOLUTION_MINUTES).toBe(15);
   });
 });

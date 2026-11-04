@@ -66,13 +66,26 @@ export type Vehicle = {
   is_default: boolean;
 };
 
+export type ArrivalIssue = {
+  id: string;
+  reservation_id: string;
+  driver_id: string;
+  issue_type: "spot_occupied" | "gate_locked" | "wrong_address" | "other";
+  note: string | null;
+  status: "pending" | "resolved" | "rejected";
+  /** When the driver was promised a full refund if the owner hasn't responded. */
+  resolution_deadline: string;
+  resolved_at: string | null;
+  created_at: string;
+};
+
 export type Reservation = {
   id: string;
   driver_id: string;
   slot_id: string;
   start_time: string;
   end_time: string;
-  status: "upcoming" | "active" | "completed" | "cancelled";
+  status: "upcoming" | "active" | "disputed" | "completed" | "cancelled";
   total_price: number;
   rate_type: "hourly" | "daily" | "monthly";
   vehicle_id: string | null;
@@ -89,6 +102,8 @@ export type Reservation = {
   } | null;
   arrived_at?: string | null;
   late_notified_at?: string | null;
+  /** Open "Can't Park" report for this booking, if any (joined from arrival_issues). */
+  pending_issue?: ArrivalIssue | null;
 };
 export type Review = {
   id: string;
@@ -291,14 +306,21 @@ export const myReservationsQuery = () =>
       if (!user) return [];
       const { data, error } = await supabase
         .from("reservations")
-        .select(`*, slot:slots(${SLOT_COLUMNS})`)
+        // arrival_issues (*-to-many) carries the driver's open "Can't Park" report.
+        .select(`*, slot:slots(${SLOT_COLUMNS}), arrival_issues(*)`)
         .eq("driver_id", user.id)
         .order("start_time", { ascending: false });
       if (error) throw error;
-      const rows = (data ?? []) as unknown as Array<Reservation & { slot: Slot | null }>;
+      const rows = (data ?? []) as unknown as Array<
+        Reservation & { slot: Slot | null; arrival_issues?: ArrivalIssue[] | null }
+      >;
       const slots = await withPrivate(rows.flatMap((r) => (r.slot ? [r.slot] : [])));
       const byId = new Map(slots.map((sl) => [sl.id, sl]));
-      return rows.map((r) => ({ ...r, slot: r.slot ? (byId.get(r.slot.id) ?? r.slot) : null }));
+      return rows.map(({ arrival_issues, ...r }) => ({
+        ...r,
+        slot: r.slot ? (byId.get(r.slot.id) ?? r.slot) : null,
+        pending_issue: (arrival_issues ?? []).find((i) => i.status === "pending") ?? null,
+      }));
     },
   });
 export const useMyReservations = () => useQuery(myReservationsQuery());

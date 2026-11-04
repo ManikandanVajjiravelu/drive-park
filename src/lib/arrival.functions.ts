@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { PARKING_ISSUE_TYPES } from "@/lib/arrival-window";
 
 const arriveSchema = z.object({
   reservationId: z.string().uuid(),
@@ -9,6 +10,12 @@ const arriveSchema = z.object({
 const lateSchema = z.object({
   reservationId: z.string().uuid(),
   minutes: z.union([z.literal(5), z.literal(10), z.literal(15), z.literal(30)]),
+});
+
+const issueSchema = z.object({
+  reservationId: z.string().uuid(),
+  issueType: z.enum(PARKING_ISSUE_TYPES),
+  note: z.string().trim().max(280).optional(),
 });
 
 async function run<T>(fn: () => Promise<T>): Promise<T> {
@@ -40,6 +47,20 @@ export const markRunningLateFn = createServerFn({ method: "POST" })
         context.userId,
         data.reservationId,
         data.minutes,
+      ),
+    ),
+  );
+
+export const reportIssueFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => issueSchema.parse(d))
+  .handler(async ({ data, context }) =>
+    run(async () =>
+      (await import("./arrival.server")).reportArrivalIssue(
+        context.userId,
+        data.reservationId,
+        data.issueType,
+        data.note,
       ),
     ),
   );

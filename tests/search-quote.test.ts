@@ -5,6 +5,7 @@ import {
   sortResults,
   FULL_FLAG_WINDOW_HOURS,
   isFullGateActive,
+  type QuoteData,
   type QuoteSlot,
 } from "../src/lib/quote";
 import { quoteWindow } from "../src/lib/bookings.server";
@@ -13,7 +14,14 @@ import { searchWindow, fetchAllPages } from "../src/lib/search.server";
 const ist = (s: string) => new Date(`${s}+05:30`);
 const NOW = ist("2026-06-09T10:00:00"); // Tuesday
 const H = 3600e3;
-const slot = (id: string, extra: Partial<QuoteSlot> = {}) => ({
+// Coordinates only exist on the raw rows the quote never sees, so they are test-only extras.
+type SlotOverride = Partial<QuoteSlot> & {
+  lat?: number;
+  lng?: number;
+  public_lat?: number;
+  public_lng?: number;
+};
+const slot = (id: string, extra: SlotOverride = {}) => ({
   id,
   owner_id: "owner",
   status: "open",
@@ -31,7 +39,7 @@ const slot = (id: string, extra: Partial<QuoteSlot> = {}) => ({
   public_lng: 80.241,
   ...extra,
 });
-const empty = { hours: [], reservations: [], holidays: [], demand: null };
+const empty: QuoteData = { hours: [], reservations: [], holidays: [], demand: null };
 const q = (s: QuoteSlot, start: Date, hours = 2, data = empty) =>
   quoteFromData(s, { startTime: start, duration: hours, rateType: "hourly" }, data, NOW);
 const res = (slot_id: string, s: Date, e: Date, extra = {}) => ({

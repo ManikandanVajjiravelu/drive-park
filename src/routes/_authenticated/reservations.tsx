@@ -59,7 +59,9 @@ function MyReservations() {
   const extendServer = useServerFn(extendBookingFn);
   const cancelServer = useServerFn(cancelBookingFn);
 
-  const active = reservations.filter((r) => r.status === "active");
+  // A disputed booking is still a live session (the driver is standing at the space), so it
+  // stays in Active — with a red badge — instead of disappearing from every section.
+  const active = reservations.filter((r) => r.status === "active" || r.status === "disputed");
   const upcoming = reservations.filter((r) => r.status === "upcoming");
   const past = reservations.filter((r) => r.status === "completed" || r.status === "cancelled");
 
@@ -228,7 +230,14 @@ function ActiveCard({
     <div className="rounded-2xl bg-primary/10 border-2 border-primary p-4">
       <div className="flex items-start justify-between">
         <div className="min-w-0">
-          <div className="font-bold">{slot.name}</div>
+          <div className="font-bold">
+            {slot.name}
+            {r.status === "disputed" && (
+              <span className="ml-2 align-middle rounded-full bg-destructive px-2 py-0.5 text-[10px] font-bold uppercase text-destructive-foreground">
+                Issue open
+              </span>
+            )}
+          </div>
           <div className="text-xs flex items-center gap-1 text-muted-foreground">
             <MapPin className="w-3 h-3" />
             {slot.full_address}

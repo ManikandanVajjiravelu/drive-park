@@ -14,6 +14,25 @@ export type ArrivalTiming = {
 export const ARRIVE_EARLY_MINUTES = 30;
 /** "Running late" closes this many minutes after the start time. */
 export const LATE_GRACE_MINUTES = 15;
+/** "Can't Park": the owner has this long to fix the problem before the driver is refunded. */
+export const ISSUE_RESOLUTION_MINUTES = 15;
+
+/** Reasons a driver can pick when the booked spot can't be used. */
+export const PARKING_ISSUE_TYPES = [
+  "spot_occupied",
+  "gate_locked",
+  "wrong_address",
+  "other",
+] as const;
+export type ParkingIssueType = (typeof PARKING_ISSUE_TYPES)[number];
+
+/** Driver-facing labels; the server reuses them in the owner's notification. */
+export const PARKING_ISSUE_LABELS: Record<ParkingIssueType, string> = {
+  spot_occupied: "Someone else is parked in my spot",
+  gate_locked: "Gate or access is locked",
+  wrong_address: "Address or directions are wrong",
+  other: "Something else",
+};
 
 const MINUTE_MS = 60e3;
 const OPEN_STATUSES = ["upcoming", "active"];
@@ -34,6 +53,21 @@ export function canMarkArrived(
   const end = timeMs(r.end_time);
   if (Number.isNaN(start) || Number.isNaN(end)) return false;
   return now >= start - ARRIVE_EARLY_MINUTES * MINUTE_MS && now <= end;
+}
+
+/**
+ * "Can't Park" is allowed once the session has started (active) and before end_time, and
+ * only once per booking: an open report *is* the dispute.
+ */
+export function canReportParkingIssue(
+  r: Pick<ArrivalTiming, "status" | "end_time"> & { pending_issue?: boolean },
+  now = Date.now(),
+): boolean {
+  if (r.status !== "active") return false;
+  if (r.pending_issue) return false;
+  const end = timeMs(r.end_time);
+  if (Number.isNaN(end)) return false;
+  return now <= end;
 }
 
 /**

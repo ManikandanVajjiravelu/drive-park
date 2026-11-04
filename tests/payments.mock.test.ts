@@ -9,7 +9,10 @@ type Call = { table: string; ops: Op[] };
 const calls: Call[] = [];
 let resolver: (c: Call) => unknown = () => ({ data: null, error: null });
 
-function chain(table: string) {
+/** The proxy answers every method name, so any chain call returns another chain. */
+type Chain = { args: (a: unknown) => Chain } & Record<string, (...a: unknown[]) => Chain>;
+
+function chain(table: string): Chain {
   const c: Call = { table, ops: [] };
   calls.push(c);
   const p: Record<string, unknown> = new Proxy({}, {
@@ -18,7 +21,7 @@ function chain(table: string) {
       return (...a: unknown[]) => { c.ops.push({ m, a }); return p; };
     },
   });
-  return p;
+  return p as Chain;
 }
 const fakeDb = {
   from: (t: string) => chain(t),

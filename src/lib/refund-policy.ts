@@ -29,9 +29,10 @@ export const REFUND_CONFIG = {
   rateLimits: {
     bookings_create: 5,
     bookings_action: 20,
-    /** "I am here" / "Running late" taps per minute. */
+    /** "I am here" / "Running late" / "Can't Park" taps per minute. */
     arrival: 10,
     late: 10,
+    arrival_issue: 10,
     payments_order: 10,
     payments_verify: 20,
     admin_refund: 30,
