@@ -60,6 +60,7 @@ function Landing() {
               Your space.
               <br />
               <span className="text-accent">Your spot.</span>
+              <span className="sr-only"> — Usop, India's parking marketplace</span>
             </h1>
             <p className="mt-3 text-white text-[15px] max-w-xs">
               Book parking in seconds — or list your driveway and earn every month.
@@ -69,6 +70,7 @@ function Landing() {
       </div>
 
       <div className="px-5 -mt-8 relative z-20">
+        <h2 className="sr-only">Usop in numbers</h2>
         <div className="card-elevated grid grid-cols-3 divide-x divide-border p-1">
           <Stat icon={<Zap className="w-4 h-4" />} value="10 sec" label="Booking" />
           <Stat icon={<ShieldCheck className="w-4 h-4" />} value="Approved" label="Listings" />
@@ -77,6 +79,7 @@ function Landing() {
       </div>
 
       <div className="px-6 pt-8 space-y-3">
+        <h2 className="sr-only">Why use Usop</h2>
         <Feature
           icon={<MapPin className="w-5 h-5" />}
           title="Live nearby spots"

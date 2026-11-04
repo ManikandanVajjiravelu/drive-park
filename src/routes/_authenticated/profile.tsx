@@ -123,6 +123,7 @@ function ProfilePage() {
           </div>
           <Link
             to="/notifications"
+            aria-label={unread > 0 ? `Notifications, ${unread} unread` : "Notifications"}
             className="relative w-10 h-10 rounded-full bg-white/10 grid place-items-center"
           >
             <Bell className="w-5 h-5" />
@@ -164,10 +165,10 @@ function ProfilePage() {
 
         {profile.role === "landowner" && (
           <div className="rounded-2xl border border-border p-4">
-            <div className="flex items-center gap-2 font-bold">
+            <h2 className="flex items-center gap-2 font-bold">
               <ShieldCheck className="w-4 h-4 text-primary" />
               Host verification
-            </div>
+            </h2>
             {vs === "approved" ? (
               <div className="mt-2 text-sm text-muted-foreground flex items-center gap-1">
                 <BadgeCheck className="w-4 h-4 text-primary" />
@@ -197,6 +198,7 @@ function ProfilePage() {
           </div>
         )}
 
+        <h2 className="sr-only">Account & support</h2>
         <div className="rounded-2xl bg-card border border-border divide-y divide-border overflow-hidden">
           {profile.role === "driver" && (
             <>
@@ -209,10 +211,10 @@ function ProfilePage() {
         </div>
 
         <div className="rounded-2xl bg-card border border-border p-4 space-y-3">
-          <div className="flex items-center gap-2 font-bold">
+          <h2 className="flex items-center gap-2 font-bold">
             <Palette className="w-4 h-4 text-primary" />
             Appearance
-          </div>
+          </h2>
           <ThemeToggle />
         </div>
 
