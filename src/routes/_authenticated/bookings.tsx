@@ -1,10 +1,14 @@
 import { RouteError, RouteNotFound } from "@/components/RouteError";
 import { createFileRoute } from "@tanstack/react-router";
 import { billedAmount } from "@/lib/money";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useOwnerBookings } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
+import { resolveDisputeAsOwnerFn } from "@/lib/disputes.functions";
+import { issueLabel, ownerCanResolve, ownerMinutesLeft } from "@/lib/disputes-window";
 
 export const Route = createFileRoute("/_authenticated/bookings")({
   component: Bookings,
@@ -15,6 +19,26 @@ export const Route = createFileRoute("/_authenticated/bookings")({
 function Bookings() {
   const { data: bookings = [], isLoading, isError, error, refetch } = useOwnerBookings();
   const qc = useQueryClient();
+  const closeReport = useServerFn(resolveDisputeAsOwnerFn);
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  /**
+   * "I fixed it": closes the driver's report and hands the booking back to them. Only allowed
+   * inside the 15 minute window — after that the server refuses and Usop decides on the refund.
+   */
+  async function fixIssue(issueId: string) {
+    const note = prompt("What did you fix? (optional)")?.trim() || undefined;
+    setBusyId(issueId);
+    try {
+      await closeReport({ data: { issueId, note } });
+      toast.success("Report closed — thanks for sorting it out");
+      qc.invalidateQueries({ queryKey: ["owner-bookings"] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not close the report");
+    } finally {
+      setBusyId(null);
+    }
+  }
 
   useEffect(() => {
     const ch = supabase
@@ -88,6 +112,36 @@ function Bookings() {
                     </span>
                   </div>
                   <div className="mt-1 text-sm font-bold">₹{billedAmount(b)}</div>
+                  {b.pending_issue && (
+                    <div className="mt-2 rounded-lg border border-destructive/40 bg-destructive/10 p-2">
+                      <div className="text-xs font-bold text-destructive">
+                        Driver reported: {issueLabel(b.pending_issue.issue_type)}
+                      </div>
+                      {b.pending_issue.note && (
+                        <p className="mt-1 whitespace-pre-wrap text-xs">{b.pending_issue.note}</p>
+                      )}
+                      {ownerCanResolve(b.pending_issue) ? (
+                        <>
+                          <p className="mt-1 text-[11px] text-muted-foreground">
+                            You have {ownerMinutesLeft(b.pending_issue)} min to fix this. After that
+                            Usop steps in and may refund the driver in full.
+                          </p>
+                          <button
+                            onClick={() => fixIssue(b.pending_issue!.id)}
+                            disabled={busyId === b.pending_issue.id}
+                            className="mt-2 rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground disabled:opacity-60"
+                          >
+                            {busyId === b.pending_issue.id ? "Closing…" : "I've fixed it"}
+                          </button>
+                        </>
+                      ) : (
+                        <p className="mt-1 text-[11px] text-muted-foreground">
+                          Your window to fix this has passed — Usop support is handling it and may
+                          refund the driver.
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

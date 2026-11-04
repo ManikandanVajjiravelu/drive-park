@@ -5,7 +5,6 @@ import { toast } from "sonner";
 import { MapPin, Clock, CheckCircle2, AlertCircle, AlertTriangle, X } from "lucide-react";
 import { markArrivedFn, markRunningLateFn, reportIssueFn } from "@/lib/arrival.functions";
 import {
-  ISSUE_RESOLUTION_MINUTES,
   PARKING_ISSUE_LABELS,
   PARKING_ISSUE_TYPES,
   canMarkArrived,
@@ -13,6 +12,7 @@ import {
   canReportParkingIssue,
   type ParkingIssueType,
 } from "@/lib/arrival-window";
+import { OWNER_WINDOW_COPY } from "@/lib/disputes-window";
 
 type Props = {
   reservation: {
@@ -142,7 +142,7 @@ export function ArrivalActions({ reservation, showAccessInstructions = false }: 
       setIssueOpen(false);
       setNote("");
       toast.success(
-        `We've notified the owner. If not resolved in ${ISSUE_RESOLUTION_MINUTES} mins, you will get a full refund.`,
+        `We've notified the owner — ${OWNER_WINDOW_COPY}, otherwise you get a full refund.`,
       );
       qc.invalidateQueries({ queryKey: ["my-reservations"] });
     } catch (e) {
@@ -264,8 +264,7 @@ export function ArrivalActions({ reservation, showAccessInstructions = false }: 
               <div>
                 <h3 className="text-base font-black">Can&apos;t Park</h3>
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  Tell the owner what&apos;s wrong. They have {ISSUE_RESOLUTION_MINUTES} minutes
-                  to fix it or you get a full refund.
+                  Tell the owner what&apos;s wrong — {OWNER_WINDOW_COPY}, or you get a full refund.
                 </p>
               </div>
               <button

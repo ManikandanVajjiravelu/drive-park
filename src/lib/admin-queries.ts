@@ -1,8 +1,11 @@
 import { queryOptions, useQuery } from "@tanstack/react-query";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { billedAmount } from "@/lib/money";
+import { ownerCanResolve, refundDuePaise } from "@/lib/disputes-window";
 import { supabase } from "@/integrations/supabase/client";
 import { SLOT_COLUMNS, withPrivate } from "@/lib/queries";
 import type { Database } from "@/integrations/supabase/types";
+import type { Database as AugmentedDatabase } from "@/types/supabase-augment";
 
 export type ApprovalStatus = Database["public"]["Enums"]["approval_status"];
 
@@ -13,6 +16,9 @@ export type AdminReview = Database["public"]["Tables"]["reviews"]["Row"];
 export type AdminSupport = Database["public"]["Tables"]["support_requests"]["Row"];
 export type AdminPayment = Database["public"]["Tables"]["payments"]["Row"];
 export type AdminReservation = Database["public"]["Tables"]["reservations"]["Row"];
+
+// arrival_issues (migration 0015) only exists in the augment, not in the generated types yet.
+const augDb = supabase as unknown as SupabaseClient<AugmentedDatabase>;
 
 export const isAdminQuery = () =>
   queryOptions({
@@ -155,10 +161,11 @@ export const adminOverviewQuery = () =>
     queryKey: ["admin-overview"],
     queryFn: async (): Promise<AdminOverview> => {
       const since = new Date(Date.now() - 30 * 86400_000).toISOString();
-      const [profiles, slots, disputes, reviews, res] = await Promise.all([
+      const [profiles, slots, disputes, issues, reviews, res] = await Promise.all([
         supabase.from("profiles").select("role"),
         supabase.from("slots").select("approval_status"),
         supabase.from("support_requests").select("status"),
+        augDb.from("arrival_issues").select("status"),
         supabase.from("reviews").select("reported,hidden"),
         supabase.from("reservations").select("start_time,status,total_price,final_price"),
       ]);
@@ -170,7 +177,9 @@ export const adminOverviewQuery = () =>
         hosts: (profiles.data ?? []).filter((p) => p.role === "landowner").length,
         slots: slots.data?.length ?? 0,
         pendingSlots: (slots.data ?? []).filter((s) => s.approval_status === "pending").length,
-        openDisputes: (disputes.data ?? []).filter((d) => d.status === "open").length,
+        openDisputes:
+          (disputes.data ?? []).filter((d) => d.status === "open").length +
+          (issues.data ?? []).filter((i) => i.status === "pending").length,
         reportedReviews: (reviews.data ?? []).filter((r) => r.reported && !r.hidden).length,
         bookings30d: paid.filter((r) => r.start_time >= since).length,
         revenue30d: paid.filter((r) => r.start_time >= since).reduce((s, r) => s + amount(r), 0),
@@ -179,5 +188,77 @@ export const adminOverviewQuery = () =>
     },
   });
 export const useAdminOverview = () => useQuery(adminOverviewQuery());
+
+// ----- "Can't Park" reports (migration 0015, resolved by the rules in disputes-window.ts) -----
+
+export type AdminArrivalIssue = AugmentedDatabase["public"]["Tables"]["arrival_issues"]["Row"];
+
+/** A report joined with the booking it froze, so the queue shows who to pay and how much. */
+export type AdminArrivalIssueView = AdminArrivalIssue & {
+  slot_id: string | null;
+  slot_name: string;
+  owner_id: string | null;
+  start_time: string | null;
+  end_time: string | null;
+  booking_status: string;
+  total_price: number;
+  /** What a full refund would send right now, in paise (0 when nothing is left to refund). */
+  due_paise: number;
+  /** True once the host's window has passed: from then on this is Usop's call. */
+  owner_expired: boolean;
+};
+
+export const adminArrivalIssuesQuery = () =>
+  queryOptions({
+    queryKey: ["admin-arrival-issues"],
+    queryFn: async (): Promise<AdminArrivalIssueView[]> => {
+      // Admins may read every report (policy arrival_issues_select_admin), no server function needed.
+      const { data: issues, error } = await augDb
+        .from("arrival_issues")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      const rows = issues ?? [];
+      if (!rows.length) return [];
+
+      const ids = [...new Set(rows.map((r) => r.reservation_id))];
+      const [{ data: bookings }, { data: payments }, { data: refunds }] = await Promise.all([
+        supabase
+          .from("reservations")
+          .select("id,slot_id,start_time,end_time,status,total_price,slot:slots(name,owner_id)")
+          .in("id", ids),
+        supabase
+          .from("payments")
+          .select("reservation_id,amount_paise,status")
+          .in("reservation_id", ids),
+        supabase
+          .from("refunds")
+          .select("reservation_id,amount_paise,status")
+          .in("reservation_id", ids),
+      ]);
+      const bookingOf = new Map((bookings ?? []).map((b) => [b.id, b]));
+
+      return rows.map((issue) => {
+        const booking = bookingOf.get(issue.reservation_id);
+        return {
+          ...issue,
+          slot_id: booking?.slot_id ?? null,
+          slot_name: booking?.slot?.name ?? "Deleted spot",
+          owner_id: booking?.slot?.owner_id ?? null,
+          start_time: booking?.start_time ?? null,
+          end_time: booking?.end_time ?? null,
+          booking_status: booking?.status ?? "unknown",
+          total_price: Number(booking?.total_price ?? 0),
+          due_paise: refundDuePaise(
+            (payments ?? []).filter((p) => p.reservation_id === issue.reservation_id),
+            (refunds ?? []).filter((r) => r.reservation_id === issue.reservation_id),
+          ),
+          owner_expired: !ownerCanResolve(issue),
+        };
+      });
+    },
+  });
+export const useAdminArrivalIssues = () => useQuery(adminArrivalIssuesQuery());
 
 export const PLATFORM_COMMISSION_RATE = 0.15;

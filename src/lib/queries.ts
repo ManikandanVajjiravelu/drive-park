@@ -343,21 +343,26 @@ export const ownerBookingsQuery = () =>
       if (slotIds.length === 0) return [];
       const { data: reservations, error } = await supabase
         .from("reservations")
-        .select("*")
+        // arrival_issues (*-to-many) carries the driver's open "Can't Park" report (migration 0015).
+        .select("*, arrival_issues(*)")
         .in("slot_id", slotIds)
         .order("start_time", { ascending: false });
       if (error) throw error;
-      const driverIds = [...new Set((reservations ?? []).map((r) => r.driver_id))];
+      const rows = (reservations ?? []) as unknown as Array<
+        Reservation & { arrival_issues?: ArrivalIssue[] | null }
+      >;
+      const driverIds = [...new Set(rows.map((r) => r.driver_id))];
       const { data: drivers } = await supabase
         .from("profiles")
         .select("user_id, name, phone")
         .in("user_id", driverIds);
       const driverMap = new Map((drivers ?? []).map((d) => [d.user_id, d]));
       const slotMap = new Map((slots ?? []).map((s) => [s.id, s]));
-      return (reservations ?? []).map((r) => ({
+      return rows.map(({ arrival_issues, ...r }) => ({
         ...r,
         driver: driverMap.get(r.driver_id) ?? null,
         slot: slotMap.get(r.slot_id) ?? null,
+        pending_issue: (arrival_issues ?? []).find((i) => i.status === "pending") ?? null,
       }));
     },
   });

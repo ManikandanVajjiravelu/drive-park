@@ -25,6 +25,7 @@ import {
 import { POLICY_META } from "@/lib/amenities";
 import { billedAmount } from "@/lib/money";
 import { cancellationRefundShare } from "@/lib/refund-policy";
+import { disputeStage, isHeldOpen, ownerMinutesLeft } from "@/lib/disputes-window";
 import { PayNowButton } from "@/components/PayNowButton";
 import { BookAgainButton } from "@/components/BookAgainButton";
 import { ArrivalActions } from "@/components/ArrivalActions";
@@ -227,6 +228,9 @@ function ActiveCard({
   onExtend: (r: ReservationWithSlot, minutes: number) => void;
 }) {
   const remaining = useCountdown(r.end_time);
+  // While a "Can't Park" report is open the countdown is the wrong thing to show: the driver was
+  // promised a refund unless the host fixes it, so say whose turn it is instead.
+  const stage = disputeStage(r);
   const slot = r.slot;
   if (!slot) return null;
   return (
@@ -253,10 +257,31 @@ function ActiveCard({
           )}
         </div>
         <div className="text-right shrink-0">
-          <div className="text-[10px] uppercase text-muted-foreground">Ends in</div>
-          <div className="font-mono font-bold text-sm">{remaining}</div>
+          {stage === "none" ? (
+            <>
+              <div className="text-[10px] uppercase text-muted-foreground">Ends in</div>
+              <div className="font-mono font-bold text-sm">{remaining}</div>
+            </>
+          ) : (
+            <>
+              <div className="text-[10px] uppercase text-muted-foreground">
+                {stage === "owner" ? "Host has" : "With Usop"}
+              </div>
+              <div className="font-mono font-bold text-sm">
+                {stage === "owner" && r.pending_issue
+                  ? `${ownerMinutesLeft(r.pending_issue)} min`
+                  : "Refund review"}
+              </div>
+            </>
+          )}
         </div>
       </div>
+      {stage !== "none" && isHeldOpen(r) && (
+        <p className="mt-2 text-[11px] font-semibold text-destructive">
+          Your session has ended. We&apos;re holding this booking open until the report is sorted
+          out.
+        </p>
+      )}
       <ParkingNote r={r} />
       {slot.access_instructions && (
         <div className="mt-2 text-xs bg-background/60 border border-border rounded-lg p-2">{slot.access_instructions}</div>
