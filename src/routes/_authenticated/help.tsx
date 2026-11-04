@@ -39,7 +39,7 @@ const FAQS = [
   },
   {
     q: "Are payments real?",
-    a: "Payments are simulated in this version. Cards saved in Wallet are stored locally for demo purposes.",
+    a: "Payments are processed securely via Razorpay (UPI and Cards). Cards saved in Wallet are stored locally for demo purposes.",
   },
   {
     q: "What is host verification?",

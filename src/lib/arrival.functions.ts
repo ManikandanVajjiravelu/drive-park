@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { PARKING_ISSUE_TYPES } from "@/lib/arrival-window";
+import { PARKING_ISSUE_TYPES, PARKING_NOTE_MAX } from "@/lib/arrival-window";
 
 const arriveSchema = z.object({
   reservationId: z.string().uuid(),
@@ -16,6 +16,12 @@ const issueSchema = z.object({
   reservationId: z.string().uuid(),
   issueType: z.enum(PARKING_ISSUE_TYPES),
   note: z.string().trim().max(280).optional(),
+});
+
+const parkingNoteSchema = z.object({
+  reservationId: z.string().uuid(),
+  // Trimmed here and normalised in arrival.server.ts: an empty note clears the column.
+  note: z.string().trim().max(PARKING_NOTE_MAX).optional(),
 });
 
 async function run<T>(fn: () => Promise<T>): Promise<T> {
@@ -60,6 +66,20 @@ export const reportIssueFn = createServerFn({ method: "POST" })
         context.userId,
         data.reservationId,
         data.issueType,
+        data.note,
+      ),
+    ),
+  );
+
+/** "Find my car": save (or clear) the driver's own note about where the car is parked. */
+export const saveParkingNoteFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => parkingNoteSchema.parse(d))
+  .handler(async ({ data, context }) =>
+    run(async () =>
+      (await import("./arrival.server")).saveParkingNote(
+        context.userId,
+        data.reservationId,
         data.note,
       ),
     ),

@@ -5,9 +5,11 @@ import {
   ISSUE_RESOLUTION_MINUTES,
   LATE_GRACE_MINUTES,
   PARKING_ISSUE_LABELS,
+  canEditParkingNote,
   canMarkArrived,
   canReportLate,
   canReportParkingIssue,
+  normalizeParkingNote,
   type ParkingIssueType,
 } from "@/lib/arrival-window";
 import { PaymentError, rateLimit } from "@/lib/payments.server";
@@ -242,4 +244,47 @@ export async function reportArrivalIssue(
   );
 
   return { issue, alreadyReported: false };
+}
+
+/**
+ * "Find my car": the driver saves (or clears) a locator for the space they used, e.g.
+ * "Level B2, Pillar 14" — the note they see when they come back. Only the driver, only
+ * while the session is still running; an empty note clears the column. Nothing about
+ * this goes to the owner, so no notification is sent.
+ */
+export async function saveParkingNote(userId: string, reservationId: string, note?: string | null) {
+  await limit(userId, "arrival");
+
+  const { data: resv, error: rErr } = await db
+    .from("reservations")
+    .select("id, driver_id, status, end_time, parking_notes")
+    .eq("id", reservationId)
+    .single();
+
+  if (rErr || !resv) throw new ArrivalError("Reservation not found");
+  if (resv.driver_id !== userId) throw new ArrivalError("Not your reservation");
+  if (!canEditParkingNote(resv)) {
+    throw new ArrivalError(
+      ["completed", "cancelled"].includes(resv.status)
+        ? "This session has ended — your parking note can no longer be changed"
+        : "You can only save a parking note while the session is running",
+    );
+  }
+
+  const parkingNotes = normalizeParkingNote(note);
+  // Retrying with the same text is success, not another write.
+  if (parkingNotes === (resv.parking_notes ?? null)) {
+    return { parkingNotes, unchanged: true };
+  }
+
+  const { error: uErr } = await db
+    .from("reservations")
+    .update({ parking_notes: parkingNotes })
+    .eq("id", reservationId)
+    .eq("driver_id", userId)
+    .select("id");
+
+  if (uErr) throw new ArrivalError("Could not save your parking note");
+
+  return { parkingNotes, unchanged: false };
 }

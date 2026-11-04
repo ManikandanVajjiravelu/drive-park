@@ -235,17 +235,21 @@ export type Database = BaseDatabase & {
       };
       reservations: {
         // Migration 0012 adds arrival tracking; coordinates are never collected.
+        // Migration 0016 adds the driver's own "find my car" note.
         Row: BaseDatabase["public"]["Tables"]["reservations"]["Row"] & {
           arrived_at: string | null;
           late_notified_at: string | null;
+          parking_notes: string | null;
         };
         Insert: BaseDatabase["public"]["Tables"]["reservations"]["Insert"] & {
           arrived_at?: string | null;
           late_notified_at?: string | null;
+          parking_notes?: string | null;
         };
         Update: BaseDatabase["public"]["Tables"]["reservations"]["Update"] & {
           arrived_at?: string | null;
           late_notified_at?: string | null;
+          parking_notes?: string | null;
         };
       };
       // Migration 0015: driver "Can't Park" reports (service_role writes only).

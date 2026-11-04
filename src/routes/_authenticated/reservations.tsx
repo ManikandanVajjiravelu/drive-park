@@ -1,6 +1,8 @@
 import { RouteError, RouteNotFound } from "@/components/RouteError";
 import { useServerFn } from "@tanstack/react-start";
 import { endSessionFn, extendBookingFn, cancelBookingFn } from "@/lib/bookings.functions";
+import { saveParkingNoteFn } from "@/lib/arrival.functions";
+import { PARKING_NOTE_MAX, canEditParkingNote } from "@/lib/arrival-window";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect, useRef } from "react";
 import { useMyReservations } from "@/lib/queries";
@@ -15,6 +17,7 @@ import {
   Receipt,
   X,
   Printer,
+  Pencil,
   Car,
   MessageCircle,
   Star,
@@ -254,6 +257,7 @@ function ActiveCard({
           <div className="font-mono font-bold text-sm">{remaining}</div>
         </div>
       </div>
+      <ParkingNote r={r} />
       {slot.access_instructions && (
         <div className="mt-2 text-xs bg-background/60 border border-border rounded-lg p-2">{slot.access_instructions}</div>
       )}
@@ -310,6 +314,120 @@ function ActiveCard({
         <PayNowButton reservationId={r.id} amount={0} slotName={slot.name} />
       ) : null}
     </div>
+  );
+}
+
+/**
+ * "Find my car": the driver's own note about where the car is left. Prominent once saved
+ * (it is what they read on the way back), a small form when it isn't. The edit window
+ * comes from arrival-window.ts so the form and saveParkingNoteFn can never disagree.
+ */
+function ParkingNote({ r }: { r: ReservationWithSlot }) {
+  const qc = useQueryClient();
+  const save = useServerFn(saveParkingNoteFn);
+  const saved = (r.parking_notes ?? "").trim();
+  const [value, setValue] = useState(saved);
+  const [editing, setEditing] = useState(saved.length === 0);
+  const [busy, setBusy] = useState(false);
+
+  // Follow the server unless the driver is mid-edit: a background refetch must not wipe
+  // what they are typing.
+  useEffect(() => {
+    if (!editing) setValue(saved);
+  }, [saved, editing]);
+
+  async function submit(note: string) {
+    setBusy(true);
+    try {
+      const res = await save({ data: { reservationId: r.id, note } });
+      toast.success(res.parkingNotes ? "Parking note saved" : "Parking note cleared");
+      setEditing(!res.parkingNotes);
+      qc.invalidateQueries({ queryKey: ["my-reservations"] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not save your note");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // Session over: still show the note (it is where the car is), just no longer editable.
+  if (!canEditParkingNote(r)) {
+    if (!saved) return null;
+    return (
+      <div className="mt-2 flex items-center gap-1.5 text-xs font-bold">
+        <Car className="w-3.5 h-3.5" />
+        {saved}
+      </div>
+    );
+  }
+
+  if (saved && !editing) {
+    return (
+      <div className="mt-2 flex items-start justify-between gap-2 rounded-xl border-2 border-primary bg-card px-3 py-2">
+        <div className="min-w-0">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            My parking spot
+          </div>
+          <div className="flex items-center gap-1.5 text-sm font-bold">
+            <Car className="w-4 h-4 shrink-0" />
+            <span className="truncate">{saved}</span>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          className="shrink-0 rounded-lg border border-border px-2 py-1 text-[11px] font-semibold flex items-center gap-1"
+        >
+          <Pencil className="w-3 h-3" />
+          Edit
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (!busy) void submit(value.trim());
+      }}
+      className="mt-2"
+    >
+      <label
+        htmlFor={`parking-note-${r.id}`}
+        className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1"
+      >
+        <Car className="w-3 h-3" />
+        Find my car
+      </label>
+      <div className="mt-1 flex gap-2">
+        <input
+          id={`parking-note-${r.id}`}
+          value={value}
+          onChange={(e) => setValue(e.target.value.slice(0, PARKING_NOTE_MAX))}
+          maxLength={PARKING_NOTE_MAX}
+          placeholder="Level B2, Pillar 14"
+          className="min-w-0 flex-1 rounded-lg border border-border bg-background px-2 py-1.5 text-xs"
+        />
+        <button
+          type="submit"
+          disabled={busy || value.trim() === saved}
+          className="shrink-0 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground disabled:opacity-50"
+        >
+          {busy ? "…" : "Save"}
+        </button>
+      </div>
+      {saved && (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void submit("")}
+          className="mt-1 text-[11px] font-semibold text-muted-foreground underline"
+        >
+          Remove note
+        </button>
+      )}
+    </form>
   );
 }
 

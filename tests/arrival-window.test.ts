@@ -5,9 +5,12 @@ import {
   LATE_GRACE_MINUTES,
   PARKING_ISSUE_LABELS,
   PARKING_ISSUE_TYPES,
+  PARKING_NOTE_MAX,
+  canEditParkingNote,
   canMarkArrived,
   canReportLate,
   canReportParkingIssue,
+  normalizeParkingNote,
 } from "@/lib/arrival-window";
 
 const START = "2026-10-04T10:00:00Z";
@@ -128,5 +131,57 @@ describe("parking issue reasons", () => {
 
   it("promises the owner a 15 minute window", () => {
     expect(ISSUE_RESOLUTION_MINUTES).toBe(15);
+  });
+});
+
+describe("canEditParkingNote", () => {
+  const active = { status: "active", end_time: END };
+
+  it("is open during the session, including the last minute", () => {
+    expect(canEditParkingNote(active, startMs)).toBe(true);
+    expect(canEditParkingNote(active, endMs)).toBe(true);
+  });
+
+  it("closes once the end time has passed", () => {
+    expect(canEditParkingNote(active, endMs + 1)).toBe(false);
+  });
+
+  it("is open before the start, so a driver can save it on the way", () => {
+    expect(canEditParkingNote({ status: "upcoming", end_time: END }, startMs - 120 * MIN)).toBe(
+      true,
+    );
+  });
+
+  it("stays open on a disputed booking (the driver is still in the garage)", () => {
+    expect(canEditParkingNote({ status: "disputed", end_time: END }, startMs)).toBe(true);
+  });
+
+  it("is closed for completed, cancelled and unknown statuses", () => {
+    expect(canEditParkingNote({ status: "completed", end_time: END }, startMs)).toBe(false);
+    expect(canEditParkingNote({ status: "cancelled", end_time: END }, startMs)).toBe(false);
+    expect(canEditParkingNote({ status: "refunded", end_time: END }, startMs)).toBe(false);
+  });
+
+  it("is closed for unparseable end times", () => {
+    expect(canEditParkingNote({ status: "active", end_time: "nope" }, startMs)).toBe(false);
+  });
+});
+
+describe("normalizeParkingNote", () => {
+  it("keeps a normal note and trims the edges", () => {
+    expect(normalizeParkingNote("  Level B2, Pillar 14 ")).toBe("Level B2, Pillar 14");
+  });
+
+  it("turns missing, empty and whitespace-only notes into null (clears the column)", () => {
+    expect(normalizeParkingNote(undefined)).toBeNull();
+    expect(normalizeParkingNote(null)).toBeNull();
+    expect(normalizeParkingNote("")).toBeNull();
+    expect(normalizeParkingNote("   \n\t ")).toBeNull();
+  });
+
+  it("caps the note at PARKING_NOTE_MAX, the same limit the database check enforces", () => {
+    const long = "x".repeat(PARKING_NOTE_MAX + 40);
+    expect(normalizeParkingNote(long)).toHaveLength(PARKING_NOTE_MAX);
+    expect(PARKING_NOTE_MAX).toBe(120);
   });
 });

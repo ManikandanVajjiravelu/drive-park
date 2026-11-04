@@ -102,6 +102,8 @@ export type Reservation = {
   } | null;
   arrived_at?: string | null;
   late_notified_at?: string | null;
+  /** Driver's own "find my car" reminder, e.g. "Level B2, Pillar 14" (migration 0016). */
+  parking_notes?: string | null;
   /** Open "Can't Park" report for this booking, if any (joined from arrival_issues). */
   pending_issue?: ArrivalIssue | null;
 };
