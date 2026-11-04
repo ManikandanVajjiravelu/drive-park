@@ -24,6 +24,7 @@ import { billedAmount } from "@/lib/money";
 import { cancellationRefundShare } from "@/lib/refund-policy";
 import { PayNowButton } from "@/components/PayNowButton";
 import { BookAgainButton } from "@/components/BookAgainButton";
+import { ArrivalActions } from "@/components/ArrivalActions";
 import type { Reservation, Slot } from "@/lib/queries";
 
 type ReservationWithSlot = Reservation & { slot: Slot | null };
@@ -168,7 +169,7 @@ function MyReservations() {
                       Leave review
                     </button>
                   )}
-                                    <button
+                  <button
                     onClick={() => setReceipt(r as ReservationWithSlot)}
                     className="text-xs font-semibold border border-border px-3 py-1.5 rounded-lg flex items-center gap-1"
                   >
@@ -247,6 +248,9 @@ function ActiveCard({
       {slot.access_instructions && (
         <div className="mt-2 text-xs bg-background/60 border border-border rounded-lg p-2">{slot.access_instructions}</div>
       )}
+      <div className="mt-3">
+        <ArrivalActions reservation={r} />
+      </div>
       <div className="mt-3 grid grid-cols-3 gap-2">
         <HostCall ownerId={slot.owner_id} />
         <Link
@@ -355,6 +359,9 @@ function UpcomingCard({
         <span className="capitalize">{POLICY_META[policy].label}</span> ·{" "}
         {share === 1 ? "Full refund if cancelled now" : share > 0 ? `${Math.round(share * 100)}% refund if cancelled now` : "No refund if cancelled now"}
       </div>
+      <div className="mt-3">
+        <ArrivalActions reservation={r} showAccessInstructions />
+      </div>
       <div className="mt-3 grid grid-cols-2 gap-2">
         <Link
           to="/messages/$reservationId"
@@ -376,7 +383,6 @@ function UpcomingCard({
         amount={Number(r.total_price)}
         slotName={slot?.name ?? "Parking slot"}
       />
-
     </div>
   );
 }
