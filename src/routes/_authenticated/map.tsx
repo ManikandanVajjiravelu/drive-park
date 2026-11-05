@@ -32,18 +32,6 @@ const SlotMap = lazy(() => import("@/components/SlotMap"));
 const Map3DDialog = lazy(() => import("@/components/Map3DDialog"));
 
 export const Route = createFileRoute("/_authenticated/map")({
-  head: () => ({
-    meta: [
-      { title: "Find Parking Spots in Chennai | Usop" },
-      { name: "description", content: "Browse nearby parking spaces on a live map, compare hourly, daily and monthly rates, and book instantly." },
-      { property: "og:title", content: "Find Parking Spots in Chennai | Usop" },
-      { property: "og:description", content: "Browse nearby parking on a live map, compare rates and book instantly." },
-      { property: "og:type", content: "website" },
-      { property: "og:url", content: "/map" },
-      { name: "twitter:card", content: "summary" },
-    ],
-    links: [{ rel: "canonical", href: "/map" }],
-  }),
   component: MapPage,
   errorComponent: RouteError,
   notFoundComponent: RouteNotFound,
