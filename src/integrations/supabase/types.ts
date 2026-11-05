@@ -1215,7 +1215,7 @@ export type Database = {
       approval_status: "pending" | "approved" | "rejected"
       lot_tier: "T1" | "T2" | "T3" | "T4"
       rate_type: "hourly" | "daily" | "monthly"
-      reservation_status: "upcoming" | "active" | "completed" | "cancelled"
+      reservation_status: "upcoming" | "active" | "completed" | "cancelled" | "disputed"
       slot_status: "open" | "full"
       slot_type:
         | "standard_car"
@@ -1359,7 +1359,7 @@ export const Constants = {
       approval_status: ["pending", "approved", "rejected"],
       lot_tier: ["T1", "T2", "T3", "T4"],
       rate_type: ["hourly", "daily", "monthly"],
-      reservation_status: ["upcoming", "active", "completed", "cancelled"],
+      reservation_status: ["upcoming", "active", "completed", "cancelled", "disputed"],
       slot_status: ["open", "full"],
       slot_type: [
         "standard_car",
