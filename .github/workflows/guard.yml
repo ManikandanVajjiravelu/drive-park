@@ -1,0 +1,24 @@
+name: Guard
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      # Tracked secrets, .env files, lockfiles, seed/helper scripts, broken migrations, NUL bytes,
+      # CRLF in the index: docs/WORKFLOW.md explains each rule.
+      - run: node scripts/check-repo.mjs
+      # Bad TypeScript and secrets are blocked before merging.
+      - run: npx tsc --noEmit

@@ -85,6 +85,48 @@
       "when": 1791700000000,
       "tag": "0011_owner_verification",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1791710000000,
+      "tag": "0012_arrival_tracking",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1791720000000,
+      "tag": "0013_drop_arrival_coords",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1791730000000,
+      "tag": "0014_reservation_disputed_status",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1791740000000,
+      "tag": "0015_arrival_issues",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1791750000000,
+      "tag": "0016_parking_notes",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1791760000000,
+      "tag": "0017_dispute_resolution",
+      "breakpoints": true
     }
   ]
 }
