@@ -14,6 +14,56 @@ export type Database = {
   }
   public: {
     Tables: {
+      arrival_issues: {
+        Row: {
+          created_at: string
+          driver_id: string
+          id: string
+          issue_type: string
+          note: string | null
+          reservation_id: string
+          resolution_deadline: string
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          driver_id: string
+          id?: string
+          issue_type: string
+          note?: string | null
+          reservation_id: string
+          resolution_deadline?: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          driver_id?: string
+          id?: string
+          issue_type?: string
+          note?: string | null
+          reservation_id?: string
+          resolution_deadline?: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "arrival_issues_reservation_id_fkey"
+            columns: ["reservation_id"]
+            isOneToOne: false
+            referencedRelation: "reservations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       favorites: {
         Row: {
           created_at: string
@@ -644,6 +694,7 @@ export type Database = {
       reservations: {
         Row: {
           amount_charged: number | null
+          arrived_at: string | null
           base_rate: number | null
           created_at: string
           discount_amount: number
@@ -655,6 +706,8 @@ export type Database = {
           grand_total: number | null
           gst_amount: number | null
           id: string
+          late_notified_at: string | null
+          parking_notes: string | null
           payment_expires_at: string | null
           pending_extension: Json | null
           price_breakdown: Json | null
@@ -670,6 +723,7 @@ export type Database = {
         }
         Insert: {
           amount_charged?: number | null
+          arrived_at?: string | null
           base_rate?: number | null
           created_at?: string
           discount_amount?: number
@@ -681,6 +735,8 @@ export type Database = {
           grand_total?: number | null
           gst_amount?: number | null
           id?: string
+          late_notified_at?: string | null
+          parking_notes?: string | null
           payment_expires_at?: string | null
           pending_extension?: Json | null
           price_breakdown?: Json | null
@@ -696,6 +752,7 @@ export type Database = {
         }
         Update: {
           amount_charged?: number | null
+          arrived_at?: string | null
           base_rate?: number | null
           created_at?: string
           discount_amount?: number
@@ -707,6 +764,8 @@ export type Database = {
           grand_total?: number | null
           gst_amount?: number | null
           id?: string
+          late_notified_at?: string | null
+          parking_notes?: string | null
           payment_expires_at?: string | null
           pending_extension?: Json | null
           price_breakdown?: Json | null
