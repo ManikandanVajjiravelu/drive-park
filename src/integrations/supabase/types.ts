@@ -14,6 +14,56 @@ export type Database = {
   }
   public: {
     Tables: {
+      arrival_issues: {
+        Row: {
+          created_at: string
+          driver_id: string
+          id: string
+          issue_type: string
+          note: string | null
+          reservation_id: string
+          resolution_deadline: string
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          driver_id: string
+          id?: string
+          issue_type: string
+          note?: string | null
+          reservation_id: string
+          resolution_deadline?: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          driver_id?: string
+          id?: string
+          issue_type?: string
+          note?: string | null
+          reservation_id?: string
+          resolution_deadline?: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "arrival_issues_reservation_id_fkey"
+            columns: ["reservation_id"]
+            isOneToOne: false
+            referencedRelation: "reservations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       favorites: {
         Row: {
           created_at: string
@@ -156,6 +206,42 @@ export type Database = {
           title?: string
           type?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      owner_documents: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          note: string | null
+          owner_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          storage_path: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          note?: string | null
+          owner_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          storage_path: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          note?: string | null
+          owner_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          storage_path?: string
         }
         Relationships: []
       }
@@ -608,6 +694,7 @@ export type Database = {
       reservations: {
         Row: {
           amount_charged: number | null
+          arrived_at: string | null
           base_rate: number | null
           created_at: string
           discount_amount: number
@@ -619,6 +706,8 @@ export type Database = {
           grand_total: number | null
           gst_amount: number | null
           id: string
+          late_notified_at: string | null
+          parking_notes: string | null
           payment_expires_at: string | null
           pending_extension: Json | null
           price_breakdown: Json | null
@@ -634,6 +723,7 @@ export type Database = {
         }
         Insert: {
           amount_charged?: number | null
+          arrived_at?: string | null
           base_rate?: number | null
           created_at?: string
           discount_amount?: number
@@ -645,6 +735,8 @@ export type Database = {
           grand_total?: number | null
           gst_amount?: number | null
           id?: string
+          late_notified_at?: string | null
+          parking_notes?: string | null
           payment_expires_at?: string | null
           pending_extension?: Json | null
           price_breakdown?: Json | null
@@ -660,6 +752,7 @@ export type Database = {
         }
         Update: {
           amount_charged?: number | null
+          arrived_at?: string | null
           base_rate?: number | null
           created_at?: string
           discount_amount?: number
@@ -671,6 +764,8 @@ export type Database = {
           grand_total?: number | null
           gst_amount?: number | null
           id?: string
+          late_notified_at?: string | null
+          parking_notes?: string | null
           payment_expires_at?: string | null
           pending_extension?: Json | null
           price_breakdown?: Json | null
@@ -1150,6 +1245,8 @@ export type Database = {
         }
         Returns: undefined
       }
+      my_verification_status: { Args: never; Returns: Json }
+      owner_documents_approved: { Args: { _owner: string }; Returns: boolean }
       payment_rank: { Args: { _s: string }; Returns: number }
       profile_briefs: {
         Args: { _user_ids: string[] }
@@ -1215,7 +1312,12 @@ export type Database = {
       approval_status: "pending" | "approved" | "rejected"
       lot_tier: "T1" | "T2" | "T3" | "T4"
       rate_type: "hourly" | "daily" | "monthly"
-      reservation_status: "upcoming" | "active" | "completed" | "cancelled"
+      reservation_status:
+        | "upcoming"
+        | "active"
+        | "completed"
+        | "cancelled"
+        | "disputed"
       slot_status: "open" | "full"
       slot_type:
         | "standard_car"
@@ -1359,7 +1461,13 @@ export const Constants = {
       approval_status: ["pending", "approved", "rejected"],
       lot_tier: ["T1", "T2", "T3", "T4"],
       rate_type: ["hourly", "daily", "monthly"],
-      reservation_status: ["upcoming", "active", "completed", "cancelled"],
+      reservation_status: [
+        "upcoming",
+        "active",
+        "completed",
+        "cancelled",
+        "disputed",
+      ],
       slot_status: ["open", "full"],
       slot_type: [
         "standard_car",
