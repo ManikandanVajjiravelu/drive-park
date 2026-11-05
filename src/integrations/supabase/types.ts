@@ -159,6 +159,42 @@ export type Database = {
         }
         Relationships: []
       }
+      owner_documents: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          note: string | null
+          owner_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          storage_path: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          note?: string | null
+          owner_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          storage_path: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          note?: string | null
+          owner_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          storage_path?: string
+        }
+        Relationships: []
+      }
       parking_lots: {
         Row: {
           created_at: string
@@ -1150,6 +1186,8 @@ export type Database = {
         }
         Returns: undefined
       }
+      my_verification_status: { Args: never; Returns: Json }
+      owner_documents_approved: { Args: { _owner: string }; Returns: boolean }
       payment_rank: { Args: { _s: string }; Returns: number }
       profile_briefs: {
         Args: { _user_ids: string[] }
@@ -1215,7 +1253,12 @@ export type Database = {
       approval_status: "pending" | "approved" | "rejected"
       lot_tier: "T1" | "T2" | "T3" | "T4"
       rate_type: "hourly" | "daily" | "monthly"
-      reservation_status: "upcoming" | "active" | "completed" | "cancelled"
+      reservation_status:
+        | "upcoming"
+        | "active"
+        | "completed"
+        | "cancelled"
+        | "disputed"
       slot_status: "open" | "full"
       slot_type:
         | "standard_car"
@@ -1359,7 +1402,13 @@ export const Constants = {
       approval_status: ["pending", "approved", "rejected"],
       lot_tier: ["T1", "T2", "T3", "T4"],
       rate_type: ["hourly", "daily", "monthly"],
-      reservation_status: ["upcoming", "active", "completed", "cancelled"],
+      reservation_status: [
+        "upcoming",
+        "active",
+        "completed",
+        "cancelled",
+        "disputed",
+      ],
       slot_status: ["open", "full"],
       slot_type: [
         "standard_car",
