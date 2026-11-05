@@ -8,6 +8,18 @@ import heroImgWide from "@/assets/parking-hero-wide.jpg";
 import { ThemeQuickToggle } from "@/components/ThemeToggle";
 
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "Usop — India's parking marketplace" },
+      { name: "description", content: "Find and book nearby parking by the hour, day or month, or earn by renting out your own space." },
+      { property: "og:title", content: "Usop — India's parking marketplace" },
+      { property: "og:description", content: "Find and book nearby parking, or earn by renting out your space." },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: "/" },
+      { name: "twitter:card", content: "summary" },
+    ],
+    links: [{ rel: "canonical", href: "/" }],
+  }),
   component: Landing,
 });
 

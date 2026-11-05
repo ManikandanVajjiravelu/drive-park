@@ -55,6 +55,18 @@ export const Route = createFileRoute("/_authenticated/slot/$id")({
     if (s.rate === "hourly" || s.rate === "daily" || s.rate === "monthly") out.rate = s.rate;
     return out;
   },
+  head: ({ params }) => ({
+    meta: [
+      { title: "Parking space details & booking | Usop" },
+      { name: "description", content: "See rates, amenities, opening hours and reviews for this parking space, then reserve it on Usop." },
+      { property: "og:title", content: "Parking space details & booking | Usop" },
+      { property: "og:description", content: "See rates, amenities and reviews for this parking space, then reserve it on Usop." },
+      { property: "og:type", content: "place" },
+      { property: "og:url", content: `/slot/${params.id}` },
+      { name: "twitter:card", content: "summary" },
+    ],
+    links: [{ rel: "canonical", href: `/slot/${params.id}` }],
+  }),
   component: SlotDetail,
   errorComponent: RouteError,
   notFoundComponent: RouteNotFound,
